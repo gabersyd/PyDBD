@@ -1,6 +1,3 @@
-Joss Paper
-Type something ---
-
     title: 'PyDBD: A Python package for Argon DBD plasmas'
     tags:
       - Python
