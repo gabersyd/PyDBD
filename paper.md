@@ -1,5 +1,5 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'PyDBD: A Python package for Argon DBD'
 tags:
   - Python
   - astronomy
@@ -91,11 +91,13 @@ For a quick reference, the following citation commands can be used:
 
 # Figures
 
-Figures can be included like this:
+```Figures can be included like this:
 ![Caption for example figure.\label{fig:example}](figure.png)
 and referenced from text using \autoref{fig:example}.
 
 Fenced code blocks are rendered with syntax highlighting:
+```
+
 ```python
 for n in range(10):
     yield f(n)
