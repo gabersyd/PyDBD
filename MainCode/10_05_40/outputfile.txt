@@ -1,0 +1,62 @@
+--------------------------------------
+Running PBS prologue script
+--------------------------------------
+User and Job Data:
+--------------------------------------
+Job ID:    709717.qb3
+Username:  saurav
+Group:     ullusers
+Date:      22-Oct-2019 19:40
+Node:      qb197 (70205)
+--------------------------------------
+PBS has allocated the following nodes:
+
+qb197
+qb199
+qb251
+qb278
+qb280
+qb282
+
+A total of 120 processors on 6 nodes allocated
+---------------------------------------------
+Check nodes and clean them of stray processes
+---------------------------------------------
+Checking node qb197 19:40:39 
+Checking node qb199 19:40:41 
+Checking node qb251 19:40:43 
+Checking node qb278 19:40:44 
+Checking node qb280 19:40:46 
+Checking node qb282 19:40:48 
+Done clearing all the allocated nodes
+------------------------------------------------------
+Concluding PBS prologue script - 22-Oct-2019 19:40:48
+------------------------------------------------------
+Tue Oct 22 19:40:48 CDT 2019
+------------------------------------------------------
+Running PBS epilogue script    - 25-Oct-2019 19:34:57
+------------------------------------------------------
+Checking node qb197 (MS)
+Checking node qb282 ok
+Checking node qb280 ok
+Checking node qb278 ok
+Checking node qb251 ok
+Checking node qb199 ok
+Checking node qb197 ok
+------------------------------------------------------
+Concluding PBS epilogue script - 25-Oct-2019 19:35:07
+------------------------------------------------------
+Exit Status:     0
+Job ID:          709717.qb3
+Username:        saurav
+Group:           ullusers
+Job Name:        parPlasma
+Session Id:      70204
+Resource Limits: ncpus=1,neednodes=6:ppn=20,nodes=6:ppn=20,walltime=72:00:00
+Resources Used:  cput=1438:29:16,mem=2193120kb,vmem=35673264kb,walltime=71:54:10
+Queue Used:      workq
+Account String:  loni_lbmtest
+Node:            qb197
+Process id:      5090
+Last status:     25-Oct-2019:19:05 PBS_job=709717.qb3 user=saurav allocation=loni_lbmtest queue=workq total_load=120.24 cpu_hours=8453.60 wall_hours=70.40 unused_nodes=0 total_nodes=6 ppn=20 avg_load=20.04 avg_cpu=1978% avg_mem=1952mb avg_vmem=35655mb top_proc=saurav:python:qb278:1.7G:83M:70.4hr:102% toppm=saurav:python:qb251:1740M:122M node_processes=22 avg_avail_mem=60622mb min_avail_mem=60239mb reverified_avg_load=20.00
+------------------------------------------------------
