@@ -8,7 +8,7 @@ The drift part is solved using explicit second order upwind scheme.
 Whereas the diffusion equation is solved using second order implicit scheme. 
 
 Multi-regions(plasma and dielectrics) are coupled strongly (monolithic solver) while solving the poisson equation.
-Whereas the continuity (transport) equation is solved for the plasma region only. 
+Whereas the continuity (transport) equation is solved in the plasma region only. 
 
 
 For any publication that involves PyDBD, citation have to be made to the following paper. 
