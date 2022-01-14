@@ -12,6 +12,7 @@ Whereas the continuity (transport) equation is solved in the plasma region only.
 
 
 For any direct and indirect use of the PyDBD software, please cite following paper:
+
 Saurav GAUTAM and Gabriele MORRA
 Pre-breakdown to stable phase and origin of multiple current pulses in argon dielectric barrier discharge
 Plasma Science and Technology
