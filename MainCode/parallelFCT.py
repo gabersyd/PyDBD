@@ -11,35 +11,44 @@ import time as tm
 import logging
 import myFunctions
 
-totalcycles = 2
-volt = 10000.0							# Interelectrode voltage (peak not RMS)
-dt = 1e-12								# delta time (taking less than 1e-12 will create instability in this code)
-frequencySource =  5000					# Frequncy of the voltage source in Hz
-width = 0.1								# gas width. Or space between two dielectric in mm
-
-ev=1.6e-19								# conversion unit ev to joule
+# parameterSize needs to be removed later
 parameterSize=996						# NUMBER OF ROWS IN THE INPUT TEXT FILE
 
 
-#*** Parameters for the of plasma reactor====================================================================
-ngrid0 = 200							# Number of grid points (between two dielectric)
-wd1 = 0.8								# width of first dielectric in mm
-wd2 = 0.8								# width of second dielectric in mm
-dx = width*10**(-3)/(ngrid0+1.0)		# Grid size in meter
+# -------------------------- READING CONDITIONS FROM INPUT FILE ------------------------------------------------
+ngrid0 		= (int(myFunctions.get_param_value("numberOfGrids","conditions.txt")))
+gasWidth 	= (float(myFunctions.get_param_value("gasWidth","conditions.txt")))
+wd1 		= (float(myFunctions.get_param_value("widthOfDielectric1","conditions.txt")))
+wd2 		= (float(myFunctions.get_param_value("widthOfDielectric2","conditions.txt")))
+pressure	= (float(myFunctions.get_param_value("gasPressure","conditions.txt")))
+temperature = (float(myFunctions.get_param_value("gasTemperature","conditions.txt")))
+gamma		= (float(myFunctions.get_param_value("secondaryElectronEmissionCoefficient","conditions.txt")))
+volt		= (float(myFunctions.get_param_value("voltage","conditions.txt")))
+frequencySource		= (float(myFunctions.get_param_value("frequency","conditions.txt")))
+initialNumberDensity = float(myFunctions.get_param_value("initialNumberDensity","conditions.txt"))
+dt = float(myFunctions.get_param_value("timeStep","conditions.txt"))
+totalcycles = int(myFunctions.get_param_value("totalACSimulationCycles","conditions.txt"))
+
+
+print (ngrid0,gasWidth,wd1,wd2,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
+
+#---------------------------------- CALCULATIONS --------------------------------------------------------------
+dx = gasWidth*10**(-3)/(ngrid0+1.0)		# Grid size in meter
 nwd1 = int(wd1*10**(-3)/dx)				# number of grid points in first dielectric
 nwd2 = int(wd2*10**(-3)/dx)				# Number of grid points in second dielectric
 wd1 = nwd1*dx							# Making wd1 as exact multiple of dx
 wd2 = nwd2*dx							# making wd2 as exact multiple of dx
-inelec = width*10**(-3)+wd1+wd2			# total interelectrode separation
+inelec = gasWidth*10**(-3)+wd1+wd2		# total interelectrode separation
 ngrid = int(ngrid0+2+nwd1+nwd2)			# total number of grid points(2 dielectrics +gas medium + all edge points)
-#--------------------------------------------------------------------------------------------------------------
-gasdens = 2.504e25						# number density of gas at NTP (unit: m^-3)
-initialNumberDensity = 1e15				# the value of electrons/ions initially present on the reactor (cosmic default 1e7 m-3)
+
+#---------------------------------- CONSTANTS ----------------------------------------------------------------
+ev=1.6e-19								# conversion unit ev to joule
+gasdens = 2.504e25						# number density of gas at NTP (unit: m^-3) (change later)
 ee = 1.6e-19							# electronic charge
 e0 = 8.54187817e-12						# permittivity of free space
 townsendunit = 1.0/((gasdens)*1e-21)	# townsend factor to convert from V/m to townsends unit
 Kboltz = 1.380e-23						# Boltzmann constant
-gamma = 0.01							# secondary electron emission coefficient (ions collide with boundary to release e-)
+
 
 
 
@@ -104,7 +113,7 @@ time = 0
 
 try:
 	while time<totaltime:# and elapsed<0.1 :
-		print(time)
+		#print(time)
 		#===============================================================================================
 		time = time+dt
 

@@ -1,0 +1,12 @@
+gasWidth = 1.0
+numberOfGrids = 300
+widthOfDielectric1 = 0.8
+widthOfDielectric2 = 0.8
+gasPressure = 760.0
+gasTemperature = 300.0 
+secondaryElectronEmissionCoefficient = 0.05
+initialNumberDensity = 1e15
+voltage = 5000.0
+frequency = 80000.0
+timeStep   = 1e-12
+totalACSimulationCycles = 2

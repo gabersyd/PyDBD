@@ -5,6 +5,8 @@ import scipy.sparse.linalg as la
 import scipy.sparse as sparse
 import time as tm
 import logging
+
+
 ####==============   POISSON MATRIX USED TO SOLVE THE POISSON'S EQUATION IMPLICTLY   ========================
 #============================================================================================================
 def SparseLaplacianOperator(nx,k1=-1,k2=0,k3=1):
@@ -142,3 +144,16 @@ def Interpolation(fieldvalue,inputdat, interval, maximumvalue,error):
 	indlocate = abs(fieldvalue[:]).astype(int)
 	return(inputdata[:,indlocate]+(inputdata[:,indlocate+1]-inputdata[:,indlocate])*(abs(fieldvalue)-indlocate)/interval)
 #--------------------------------------------------------------------------------------------------------------
+
+
+
+def get_param_value(param_name, filename):
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                key, value = line.split('=')
+                if key.strip() == param_name:
+                    return value.strip()
+
+    return None
