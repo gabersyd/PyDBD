@@ -85,8 +85,8 @@ esigmaLR = np.zeros((2),float)				# surface energy density
 ndensity = initialNumberDensity +0*np.random.rand(ns,ngrid0+2)		# initializing the number densities with random value
 ndensity[2] = 0.							# initially argon dimer density is considered zero
 edensity = 0*np.random.rand(ngrid0+2)		# energy density initialization with zero value
-datapercycle = 50							# how many data per cycle to record
-datapercycle1 = 200							# how many data per cycle to record
+datapercycle = 25							# how many data per cycle to record
+datapercycle1 = 25							# how many data per cycle to record
 
 totaldata = totalcycles*datapercycle		# calculation of how many data will there be in total
 totaltime = totalcycles/frequencySource		# calculating the total simulation time
@@ -98,13 +98,16 @@ stepinterval1 = totaltime/totaldata1		# calculating approdimate time between two
 
 prevloc = 0									# accumulator (that will be used to take decision to save data)
 prevloc1 = 0								# accumulator (that will be used to take decision to save data)
-#storedensity = np.zeros((totaldata+5,ns,ngrid0+2),float)				# number density	
-#storenetcharge = np.zeros((totaldata+5,ngrid0+2+nwd1+nwd2),float)		# net charge
-#storeefield = np.zeros((totaldata+5,ngrid0+2),float)					# elecritc field
-#storepotentl = np.zeros((totaldata+5,ngrid0+2+nwd1+nwd2),float)		# potential
-#storeenergy = np.zeros((totaldata+5,ngrid0+2),float)					# potential
-#storeReact = np.zeros((totaldata+5,ns,ngrid0+2),float)					# production rate
-#storeR = np.zeros((totaldata+5,nr,ngrid0+2),float)						# reaction rate
+
+storedensity = np.zeros((totaldata+5,ns,ngrid0+2),float)				# number density	
+storenetcharge = np.zeros((totaldata+5,ngrid0+2+nwd1+nwd2),float)		# net charge
+storeefield = np.zeros((totaldata+5,ngrid0+2),float)					# elecritc field
+storepotentl = np.zeros((totaldata+5,ngrid0+2+nwd1+nwd2),float)		# potential
+storeenergy = np.zeros((totaldata+5,ngrid0+2),float)					# potential
+storeReact = np.zeros((totaldata+5,ns,ngrid0+2),float)					# production rate
+storeR = np.zeros((totaldata+5,nr,ngrid0+2),float)						# reaction rate
+
+
 storeCurrent = np.zeros(int(totaldata1+5),float)						# current
 
 
@@ -355,13 +358,13 @@ try:
 		#===============================================================================================
 		#								   *** DATA STORAGE ***
 		#-----------------------------------------------------------------------------------------------
-		#if (save == 1):
-			#storedensity[newloc,:,:]=ndensity[:,:]
-			#storenetcharge[newloc]=netcharge
-			#storeefield[newloc]=efield
-			#storepotentl[newloc]=potentl
-			#storeenergy[newloc]=energyparticle
-			#storeR[newloc]=R
+		if (save == 1):
+			storedensity[newloc,:,:]=ndensity[:,:]
+			storenetcharge[newloc]=netcharge
+			storeefield[newloc]=efield
+			storepotentl[newloc]=potentl
+			storeenergy[newloc]=energyparticle
+			storeR[newloc]=R
 		#-----------------------------------------------------------------------------------------------
 		if (save1 == 1):
 			storeCurrent[newloc1]=current
@@ -371,26 +374,9 @@ try:
 except Exception as e: 
 	print(e)
 	rank=1
-	'''np.savetxt('output/electron'+str(rank)+'.txt',storedensity[:,0,:])
-	np.savetxt('output/arpion'+str(rank)+'.txt',storedensity[:,1,:])
-	np.savetxt('output/ar2pion'+str(rank)+'.txt',storedensity[:,2,:])
-	np.savetxt('output/arstar'+str(rank)+'.txt',storedensity[:,3,:])
-	np.savetxt('output/potential'+str(rank)+'.txt',storepotentl)
-	np.savetxt('output/current'+str(rank)+'.txt',storeCurrent)
-	np.savetxt('output/netcharge'+str(rank)+'.txt',storenetcharge)
-	np.savetxt('output/efield'+str(rank)+'.txt',storeefield)
-	np.savetxt('output/produc0'+str(rank)+'.txt',storeReact[:,0,:])
-	np.savetxt('output/produc1'+str(rank)+'.txt',storeReact[:,1,:])
-	np.savetxt('output/produc2'+str(rank)+'.txt',storeReact[:,2,:])
-	np.savetxt('output/produc3'+str(rank)+'.txt',storeReact[:,3,:])
-	np.savetxt('output/R0'+str(rank)+'.txt',storeR[:,0,:])
-	np.savetxt('output/R1'+str(rank)+'.txt',storeR[:,1,:])
-	np.savetxt('output/R2'+str(rank)+'.txt',storeR[:,2,:])
-	np.savetxt('output/R3'+str(rank)+'.txt',storeR[:,3,:])
-	np.savetxt('output/R4'+str(rank)+'.txt',storeR[:,4,:])
-	np.savetxt('output/energy'+str(rank)+'.txt',storeenergy)
+	#add some code that will save all intermediate results
 	np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
-	np.savetxt('out/error.txt',str(e))'''
+	np.savetxt('out/error.txt',str(e))
 
 #from mpi4py import MPI
 #comm = MPI.COMM_WORLD
@@ -411,22 +397,80 @@ for data in np.arange(numberconditions):
 	gap[data] = lineSplit[2]
 #print(volt,freq,gap)
 
-#np.savetxt('output/electron'+str(rank)+'.txt',storedensity[:,0,:])
-#np.savetxt('output/arpion'+str(rank)+'.txt',storedensity[:,1,:])
-#np.savetxt('output/ar2pion'+str(rank)+'.txt',storedensity[:,2,:])
-#np.savetxt('output/arstar'+str(rank)+'.txt',storedensity[:,3,:])
-#np.savetxt('output/potential'+str(rank)+'.txt',storepotentl)
-#np.savetxt('output/current'+str(rank)+'.txt',storeCurrent)
-#np.savetxt('output/netcharge'+str(rank)+'.txt',storenetcharge)
-#np.savetxt('output/efield'+str(rank)+'.txt',storeefield)
-#np.savetxt('output/produc0'+str(rank)+'.txt',storeReact[:,0,:])
-#np.savetxt('output/produc1'+str(rank)+'.txt',storeReact[:,1,:])
-#np.savetxt('output/produc2'+str(rank)+'.txt',storeReact[:,2,:])
-#np.savetxt('output/produc3'+str(rank)+'.txt',storeReact[:,3,:])
-#np.savetxt('output/R0'+str(rank)+'.txt',storeR[:,0,:])
-#np.savetxt('output/R1'+str(rank)+'.txt',storeR[:,1,:])
-#np.savetxt('output/R2'+str(rank)+'.txt',storeR[:,2,:])
-#np.savetxt('output/R3'+str(rank)+'.txt',storeR[:,3,:])
-#np.savetxt('output/R4'+str(rank)+'.txt',storeR[:,4,:])
-#np.savetxt('output/energy'+str(rank)+'.txt',storeenergy)
-#np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
+np.savetxt('output/electron'+str(rank)+'.txt',storedensity[:,0,:])
+np.savetxt('output/arpion'+str(rank)+'.txt',storedensity[:,1,:])
+np.savetxt('output/ar2pion'+str(rank)+'.txt',storedensity[:,2,:])
+np.savetxt('output/arstar'+str(rank)+'.txt',storedensity[:,3,:])
+np.savetxt('output/potential'+str(rank)+'.txt',storepotentl)
+np.savetxt('output/current'+str(rank)+'.txt',storeCurrent)
+np.savetxt('output/netcharge'+str(rank)+'.txt',storenetcharge)
+np.savetxt('output/efield'+str(rank)+'.txt',storeefield)
+np.savetxt('output/produc0'+str(rank)+'.txt',storeReact[:,0,:])
+np.savetxt('output/produc1'+str(rank)+'.txt',storeReact[:,1,:])
+np.savetxt('output/produc2'+str(rank)+'.txt',storeReact[:,2,:])
+np.savetxt('output/produc3'+str(rank)+'.txt',storeReact[:,3,:])
+np.savetxt('output/R0'+str(rank)+'.txt',storeR[:,0,:])
+np.savetxt('output/R1'+str(rank)+'.txt',storeR[:,1,:])
+np.savetxt('output/R2'+str(rank)+'.txt',storeR[:,2,:])
+np.savetxt('output/R3'+str(rank)+'.txt',storeR[:,3,:])
+np.savetxt('output/R4'+str(rank)+'.txt',storeR[:,4,:])
+np.savetxt('output/energy'+str(rank)+'.txt',storeenergy)
+
+np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
+
+
+
+# ----------------------------- Output ------------------------------------
+# -------------------------------------------------------------------------
+np.savetxt('output/electron'+str(rank)+'.txt',storedensity[:,0,:])
+myFunctions.plotImage('electron',storedensity[:,0,:])
+
+np.savetxt('output/arpion'+str(rank)+'.txt',storedensity[:,1,:])
+myFunctions.plotImage('arpion',storedensity[:,1,:])
+
+np.savetxt('output/ar2pion'+str(rank)+'.txt',storedensity[:,2,:])
+myFunctions.plotImage('ar2pion',storedensity[:,2,:])
+
+np.savetxt('output/arstar'+str(rank)+'.txt',storedensity[:,3,:])
+myFunctions.plotImage('arstar',storedensity[:,3,:])
+
+np.savetxt('output/potential'+str(rank)+'.txt',storepotentl)
+myFunctions.plotImage('potential',storepotentl)
+
+np.savetxt('output/current'+str(rank)+'.txt',storeCurrent)
+
+np.savetxt('output/netcharge'+str(rank)+'.txt',storenetcharge)
+myFunctions.plotImage('netcharge',storenetcharge)
+
+np.savetxt('output/efield'+str(rank)+'.txt',storeefield)
+myFunctions.plotImage('efield',storeefield)
+
+np.savetxt('output/produc0'+str(rank)+'.txt',storeReact[:,0,:])
+myFunctions.plotImage('produc0',storeReact[:,0,:])
+
+np.savetxt('output/produc1'+str(rank)+'.txt',storeReact[:,1,:])
+myFunctions.plotImage('produc1',storeReact[:,1,:])
+
+np.savetxt('output/produc2'+str(rank)+'.txt',storeReact[:,2,:])
+myFunctions.plotImage('produc2',storeReact[:,2,:])
+
+np.savetxt('output/produc3'+str(rank)+'.txt',storeReact[:,3,:])
+myFunctions.plotImage('produc3',storeReact[:,3,:])
+
+np.savetxt('output/R0'+str(rank)+'.txt',storeR[:,0,:])
+myFunctions.plotImage('R0',storeR[:,0,:])
+
+np.savetxt('output/R1'+str(rank)+'.txt',storeR[:,1,:])
+myFunctions.plotImage('R1',storeR[:,1,:])
+
+np.savetxt('output/R2'+str(rank)+'.txt',storeR[:,2,:])
+myFunctions.plotImage('R2',storeR[:,2,:])
+
+np.savetxt('output/R3'+str(rank)+'.txt',storeR[:,3,:])
+myFunctions.plotImage('R3',storeR[:,3,:])
+
+np.savetxt('output/R4'+str(rank)+'.txt',storeR[:,4,:])
+myFunctions.plotImage('R4',storeR[:,4,:])
+
+np.savetxt('output/energy'+str(rank)+'.txt',storeenergy)
+myFunctions.plotImage('energy',storeenergy)

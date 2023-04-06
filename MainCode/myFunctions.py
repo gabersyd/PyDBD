@@ -157,3 +157,12 @@ def readParametersFromFile(param_name, filename):
                     return value.strip()
 
     return None
+
+
+# ------
+def plotImage(title,storedensityy):
+	plt.clf()
+	plt.imshow(np.transpose(storedensityy),aspect = 'auto')
+	plt.title(title)
+	plt.colorbar()
+	plt.savefig('output/' + title + '.png' , dpi=200)
