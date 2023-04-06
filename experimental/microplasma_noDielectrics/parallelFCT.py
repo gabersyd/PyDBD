@@ -393,24 +393,6 @@ for data in np.arange(numberconditions):
 	gap[data] = lineSplit[2]
 #print(volt,freq,gap)
 
-np.savetxt('output/electron'+str(rank)+'.txt',storedensity[:,0,:])
-np.savetxt('output/arpion'+str(rank)+'.txt',storedensity[:,1,:])
-np.savetxt('output/ar2pion'+str(rank)+'.txt',storedensity[:,2,:])
-np.savetxt('output/arstar'+str(rank)+'.txt',storedensity[:,3,:])
-np.savetxt('output/potential'+str(rank)+'.txt',storepotentl)
-np.savetxt('output/current'+str(rank)+'.txt',storeCurrent)
-np.savetxt('output/netcharge'+str(rank)+'.txt',storenetcharge)
-np.savetxt('output/efield'+str(rank)+'.txt',storeefield)
-np.savetxt('output/produc0'+str(rank)+'.txt',storeReact[:,0,:])
-np.savetxt('output/produc1'+str(rank)+'.txt',storeReact[:,1,:])
-np.savetxt('output/produc2'+str(rank)+'.txt',storeReact[:,2,:])
-np.savetxt('output/produc3'+str(rank)+'.txt',storeReact[:,3,:])
-np.savetxt('output/R0'+str(rank)+'.txt',storeR[:,0,:])
-np.savetxt('output/R1'+str(rank)+'.txt',storeR[:,1,:])
-np.savetxt('output/R2'+str(rank)+'.txt',storeR[:,2,:])
-np.savetxt('output/R3'+str(rank)+'.txt',storeR[:,3,:])
-np.savetxt('output/R4'+str(rank)+'.txt',storeR[:,4,:])
-np.savetxt('output/energy'+str(rank)+'.txt',storeenergy)
 
 np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
 

@@ -18,8 +18,6 @@ parameterSize=996						# NUMBER OF ROWS IN THE INPUT TEXT FILE
 # -------------------------- READING CONDITIONS FROM INPUT FILE ------------------------------------------------
 ngrid0 		= (int(myFunctions.readParametersFromFile("number_of_grids","conditions.txt")))
 gasWidth 	= (float(myFunctions.readParametersFromFile("gas_width","conditions.txt")))
-wd1 		= (float(myFunctions.readParametersFromFile("width_of_dielectric1","conditions.txt")))
-wd2 		= (float(myFunctions.readParametersFromFile("width_of_dielectric2","conditions.txt")))
 pressure	= (float(myFunctions.readParametersFromFile("gas_pressure","conditions.txt")))
 temperature = (float(myFunctions.readParametersFromFile("gas_temperature","conditions.txt")))
 gamma		= (float(myFunctions.readParametersFromFile("secondary_electron_emission_coefficient","conditions.txt")))
@@ -32,7 +30,7 @@ gasConstant = float(myFunctions.readParametersFromFile("gas_constant","condition
 useAdaptiveTime = bool((myFunctions.readParametersFromFile("enable_adaptive_time_stepping","conditions.txt"))) # feature not used here
 
 #remove later - - 
-print (ngrid0,gasWidth,wd1,wd2,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
+print (ngrid0,gasWidth,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
 
 
 
@@ -45,12 +43,8 @@ Kboltz = 1.380e-23						# Boltzmann constant
 
 #---------------------------------- CALCULATIONS --------------------------------------------------------------
 dx = gasWidth*10**(-3)/(ngrid0+1.0)		# Grid size in meter
-nwd1 = int(wd1*10**(-3)/dx)				# number of grid points in first dielectric
-nwd2 = int(wd2*10**(-3)/dx)				# Number of grid points in second dielectric
-wd1 = nwd1*dx							# Making wd1 as exact multiple of dx
-wd2 = nwd2*dx							# making wd2 as exact multiple of dx
-inelec = gasWidth*10**(-3)+wd1+wd2		# total interelectrode separation
-ngrid = int(ngrid0+2+nwd1+nwd2)			# total number of grid points(2 dielectrics +gas medium + all edge points)
+inelec = gasWidth*10**(-3)		# total interelectrode separation
+ngrid = int(ngrid0+2)			# total number of grid points(2 dielectrics +gas medium + all edge points)
 gasdens = 2.504e25						# number density of gas at NTP (unit: m^-3) (change later)
 gasdens = (pressure * avogadro) / (gasConstant * temperature)  # ideal gas law
 townsendunit = 1.0/((gasdens)*1e-21)	# townsend factor to convert from V/m to townsends unit
@@ -100,9 +94,9 @@ prevloc = 0									# accumulator (that will be used to take decision to save da
 prevloc1 = 0								# accumulator (that will be used to take decision to save data)
 
 storedensity = np.zeros((totaldata+5,ns,ngrid0+2),float)				# number density	
-storenetcharge = np.zeros((totaldata+5,ngrid0+2+nwd1+nwd2),float)		# net charge
+storenetcharge = np.zeros((totaldata+5,ngrid0+2),float)		# net charge
 storeefield = np.zeros((totaldata+5,ngrid0+2),float)					# elecritc field
-storepotentl = np.zeros((totaldata+5,ngrid0+2+nwd1+nwd2),float)		# potential
+storepotentl = np.zeros((totaldata+5,ngrid0+2),float)		# potential
 storeenergy = np.zeros((totaldata+5,ngrid0+2),float)					# potential
 storeReact = np.zeros((totaldata+5,ns,ngrid0+2),float)					# production rate
 storeR = np.zeros((totaldata+5,nr,ngrid0+2),float)						# reaction rate
@@ -208,7 +202,7 @@ try:
 		#==================================================================================================
 		#						   *** POISSON'S EQUATION ***
 		#--------------------------------------------------------------------------------------------------
-		netcharge[nwd1:nwd1+2+ngrid0] = ee*np.dot(ncharge,ndensity)					# calculating net charge
+		netcharge = ee*np.dot(ncharge,ndensity)					# calculating net charge
 		#netcharge[nwd1+1:nwd1+1+ngrid0] = 0.						 				# quasi neutrality condition
 		leftPot = 1.0*volt*np.sin(2*np.pi*time*frequencySource)	   					# applied voltage (left)
 		rightpot = 0.0*volt*np.sin(2*np.pi*time*frequencySource)	  				# applied voltage (right)
@@ -218,7 +212,9 @@ try:
 		potentl = la.spsolve(poissonSparseMatrix,chrgg)			   			# solving system of Matrix equations
 		#--------------------------------------------------------------------------------------------------
 		#**calculate electric field as negative gradient of potential (Expressed in Townsend Unit)
-		efield[:] =- townsendunit*(potentl[nwd1+1:nwd1+3+ngrid0]-potentl[nwd1-1:nwd1+1+ngrid0])/(2.0*dx)
+		efield[1:-1] =   -townsendunit*(potentl[2:]-potentl[:-2])/(2.0*dx)
+		efield[0] =   -townsendunit*(potentl[1]-potentl[0])/(dx)
+		efield[-1] =   -townsendunit*(potentl[-1]-potentl[-2])/(dx)
 		#----------------------------------------------------------------------------------------------------------
 
 
@@ -313,8 +309,8 @@ try:
 
 		#-------------------------------------------------------------------------------------------------------------
 		#------------------------------- before correction -----------------------------------------------------------
-		ndensity[:-1,0] = sigmaLR[:-1,0]/dx	#volume charge density approximation due to charge accumulation on left dielectric			
-		ndensity[:-1,-1] = sigmaLR[:-1,1]/dx   #volume charge density approximation due to charge accumulation on left dielectric
+		#ndensity[:-1,0] = sigmaLR[:-1,0]/dx	#volume charge density approximation due to charge accumulation on left dielectric			
+		#ndensity[:-1,-1] = sigmaLR[:-1,1]/dx   #volume charge density approximation due to charge accumulation on left dielectric
 		#-------------------------------------------------------------------------------------------------------------
 		ndensity[0,1] = (ndensity[0,1]*dx+dt*(secondary1+secondary2-sigvthL+(1-stickingProb)*fluxLR[0,0]))/dx
 		ndensity[0,-2] = (ndensity[0,-2]*dx+dt*(secondary11+secondary22-sigvthR+(1-stickingProb)*fluxLR[0,1]))/dx
@@ -396,7 +392,6 @@ for data in np.arange(numberconditions):
 	freq[data] = lineSplit[1]
 	gap[data] = lineSplit[2]
 #print(volt,freq,gap)
-
 
 np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
 
