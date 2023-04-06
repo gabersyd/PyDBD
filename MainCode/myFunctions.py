@@ -150,7 +150,7 @@ def Interpolation(fieldvalue,inputdat, interval, maximumvalue,error):
 def get_param_value(param_name, filename):
     with open(filename, 'r') as f:
         for line in f:
-            line = line.strip()
+            line = line.split("#")[0].strip() # remove comment after "#"
             if line:
                 key, value = line.split('=')
                 if key.strip() == param_name:

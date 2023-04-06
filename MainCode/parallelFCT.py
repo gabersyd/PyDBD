@@ -29,7 +29,7 @@ initialNumberDensity = float(myFunctions.get_param_value("initialNumberDensity",
 dt = float(myFunctions.get_param_value("timeStep","conditions.txt"))
 totalcycles = int(myFunctions.get_param_value("totalACSimulationCycles","conditions.txt"))
 
-
+#remove later - - 
 print (ngrid0,gasWidth,wd1,wd2,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
 
 #---------------------------------- CALCULATIONS --------------------------------------------------------------
@@ -50,12 +50,13 @@ townsendunit = 1.0/((gasdens)*1e-21)	# townsend factor to convert from V/m to to
 Kboltz = 1.380e-23						# Boltzmann constant
 
 
+# remove after implementing arbitrary chemistry ---------------------
+ns = 4										# total number of species
+nr = 5										# total number of chemical reactions
 
 
 #*** Initialization
 #-----------------------------------------------------------------------------------------------------
-ns = 4										# total number of species
-nr = 5										# total number of chemical reactions
 ndensity = np.zeros((ns,ngrid0+2),float)	# number density of each species
 ncharge = np.array([-1,1,1,0])				# corresponding charge of the each species
 gMat = np.array([0,1,1,0])					# gamma matrix (boolean what produces secondary electrons)
