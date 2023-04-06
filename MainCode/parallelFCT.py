@@ -16,21 +16,32 @@ parameterSize=996						# NUMBER OF ROWS IN THE INPUT TEXT FILE
 
 
 # -------------------------- READING CONDITIONS FROM INPUT FILE ------------------------------------------------
-ngrid0 		= (int(myFunctions.get_param_value("numberOfGrids","conditions.txt")))
-gasWidth 	= (float(myFunctions.get_param_value("gasWidth","conditions.txt")))
-wd1 		= (float(myFunctions.get_param_value("widthOfDielectric1","conditions.txt")))
-wd2 		= (float(myFunctions.get_param_value("widthOfDielectric2","conditions.txt")))
-pressure	= (float(myFunctions.get_param_value("gasPressure","conditions.txt")))
-temperature = (float(myFunctions.get_param_value("gasTemperature","conditions.txt")))
-gamma		= (float(myFunctions.get_param_value("secondaryElectronEmissionCoefficient","conditions.txt")))
-volt		= (float(myFunctions.get_param_value("voltage","conditions.txt")))
-frequencySource		= (float(myFunctions.get_param_value("frequency","conditions.txt")))
-initialNumberDensity = float(myFunctions.get_param_value("initialNumberDensity","conditions.txt"))
-dt = float(myFunctions.get_param_value("timeStep","conditions.txt"))
-totalcycles = int(myFunctions.get_param_value("totalACSimulationCycles","conditions.txt"))
+ngrid0 		= (int(myFunctions.readParametersFromFile("number_of_grids","conditions.txt")))
+gasWidth 	= (float(myFunctions.readParametersFromFile("gas_width","conditions.txt")))
+wd1 		= (float(myFunctions.readParametersFromFile("width_of_dielectric1","conditions.txt")))
+wd2 		= (float(myFunctions.readParametersFromFile("width_of_dielectric2","conditions.txt")))
+pressure	= (float(myFunctions.readParametersFromFile("gas_pressure","conditions.txt")))
+temperature = (float(myFunctions.readParametersFromFile("gas_temperature","conditions.txt")))
+gamma		= (float(myFunctions.readParametersFromFile("secondary_electron_emission_coefficient","conditions.txt")))
+volt		= (float(myFunctions.readParametersFromFile("voltage","conditions.txt")))
+frequencySource		= (float(myFunctions.readParametersFromFile("frequency","conditions.txt")))
+initialNumberDensity = float(myFunctions.readParametersFromFile("initial_number_density","conditions.txt"))
+dt = float(myFunctions.readParametersFromFile("timeStep","conditions.txt"))
+totalcycles = int(myFunctions.readParametersFromFile("total_AC_simulation_cycles","conditions.txt"))
+gasConstant = float(myFunctions.readParametersFromFile("gas_constant","conditions.txt"))
+useAdaptiveTime = bool((myFunctions.readParametersFromFile("enable_adaptive_time_stepping","conditions.txt"))) # feature not used here
 
 #remove later - - 
 print (ngrid0,gasWidth,wd1,wd2,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
+
+
+
+#---------------------------------- CONSTANTS ----------------------------------------------------------------
+avogadro = 6.02e23 						# molecules per mole
+ev=1.6e-19								# conversion unit ev to joule
+ee = 1.6e-19							# electronic charge
+e0 = 8.54187817e-12						# permittivity of free space
+Kboltz = 1.380e-23						# Boltzmann constant
 
 #---------------------------------- CALCULATIONS --------------------------------------------------------------
 dx = gasWidth*10**(-3)/(ngrid0+1.0)		# Grid size in meter
@@ -40,14 +51,9 @@ wd1 = nwd1*dx							# Making wd1 as exact multiple of dx
 wd2 = nwd2*dx							# making wd2 as exact multiple of dx
 inelec = gasWidth*10**(-3)+wd1+wd2		# total interelectrode separation
 ngrid = int(ngrid0+2+nwd1+nwd2)			# total number of grid points(2 dielectrics +gas medium + all edge points)
-
-#---------------------------------- CONSTANTS ----------------------------------------------------------------
-ev=1.6e-19								# conversion unit ev to joule
 gasdens = 2.504e25						# number density of gas at NTP (unit: m^-3) (change later)
-ee = 1.6e-19							# electronic charge
-e0 = 8.54187817e-12						# permittivity of free space
+gasdens = (pressure * avogadro) / (gasConstant * temperature)  # ideal gas law
 townsendunit = 1.0/((gasdens)*1e-21)	# townsend factor to convert from V/m to townsends unit
-Kboltz = 1.380e-23						# Boltzmann constant
 
 
 # remove after implementing arbitrary chemistry ---------------------

@@ -147,7 +147,7 @@ def Interpolation(fieldvalue,inputdat, interval, maximumvalue,error):
 
 
 
-def get_param_value(param_name, filename):
+def readParametersFromFile(param_name, filename):
     with open(filename, 'r') as f:
         for line in f:
             line = line.split("#")[0].strip() # remove comment after "#"
