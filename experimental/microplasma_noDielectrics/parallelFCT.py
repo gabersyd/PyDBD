@@ -222,8 +222,8 @@ try:
 		#==================================================================================================
 		#					  *** TRANSPORT AND REACTION COEFFICIENTS ***
 		#--------------------------------------------------------------------------------------------------
-		mobilityG = np.transpose(ncharge*np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))	# mobility
-		diffusionG = myFunctions.Interpolation(efield,diffusionInput,1,990,0.01)									# diffusion
+		mobilityG = np.transpose(ncharge*np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
+		diffusionG = myFunctions.Interpolation(efield,diffusionInput,1,990,0.01)/gasdens									# diffusion
 		efield[:] = efield[:]/townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
 		#------------------------------------------------------------------------------------------------
 		ekchindensity = ndensity[0].copy()
