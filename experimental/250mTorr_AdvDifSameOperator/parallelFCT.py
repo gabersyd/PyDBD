@@ -182,18 +182,13 @@ try:
 		#------------------------------------------------------------------------------------------------------
 		temporaryCopy[:,0] = temporaryCopy[:,1].copy()		# mirror boundary (left)
 		temporaryCopy[:,-1] = temporaryCopy[:,-2].copy()	# mirror boundary (right)
-		temporaryCopy[:,1:-1] = myFunctions.diffusionfct(ns,ngrid0, temporaryCopy[:],diffusionG[:],dx,dt,mobilityG[:-1]*efield)#solving Implictly for[0]
-		#temporaryCopy[:-1,0] = 0		# BC- Zero inward flux in advection
-		#temporaryCopy[:-1,-1] = 0		# BC- Zero inward flux in advection
-		#temporaryCopy[:-1,1:-1] = myFunctions.AdvectionAlgorithm(dx,dt,mobilityG[:-1]*efield,temporaryCopy[:-1]) #solving for electron
-
+		for loopDD in np.arange(ns):
+			temporaryCopy[loopDD,1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0, temporaryCopy[loopDD,:],diffusionG[loopDD,:],dx,dt,mobilityG[loopDD,]*efield)#solving Implictly for[0]
+	
 		#-------------------------------------------------------------------------------------------------------
 		etemporaryCopy[0] = etemporaryCopy[1].copy()		# mirror boundary (left)
 		etemporaryCopy[-1] = etemporaryCopy[-2].copy()		# mirror boundary (right)
-		etemporaryCopy[1:-1] = myFunctions.diffusionfctE(ngrid0,etemporaryCopy,(5/3)*diffusionG[0],dx,dt,(5/3)*mobilityG[0]*efield)#solving Implictly for[0]
-		#etemporaryCopy[0] = 0			# BC- Zero inward flux in energy advection
-		#etemporaryCopy[-1] = 0			# BC- Zero inward flux in energy advection
-		#etemporaryCopy[1:-1] = myFunctions.AdvectionAlgorithmE(dx,dt,(5/3)*mobilityG[0]*efield,etemporaryCopy) #solving for energy
+		etemporaryCopy[1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0,etemporaryCopy,(5/3)*diffusionG[0],dx,dt,(5/3)*mobilityG[0]*efield)#solving Implictly for[0]
 		#-------------------------------------------------------------------------------------------------------
 		#=======================================================================================================
 		#--- copying back to the original matrix ---------------------------------------------------------------
@@ -207,7 +202,6 @@ try:
 		#						   *** POISSON'S EQUATION ***
 		#--------------------------------------------------------------------------------------------------
 		netcharge = ee*np.dot(ncharge,ndensity)					# calculating net charge
-		#netcharge[nwd1+1:nwd1+1+ngrid0] = 0.						 				# quasi neutrality condition
 		leftPot = 1.0*volt*np.sin(2*np.pi*time*frequencySource)	   					# applied voltage (left)
 		rightpot = 0.0*volt*np.sin(2*np.pi*time*frequencySource)	  				# applied voltage (right)
 		chrgg =- (netcharge/e0)*dx*dx								 		# RHS matrix. <Read documentation>

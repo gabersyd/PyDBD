@@ -17,36 +17,9 @@ def SparseLaplacianOperator(n,k1=-1,k2=0,k3=1):
 	d1[:-2] = 1; d2[1:-1]=-2;d3[2:]=1
 	return (sparse.dia_matrix(([d1,d2,d3],[k1,k2,k3]),shape=(n,n)).tocsc() ) 
 #------------------------------------------------------------------------------------------------------------
-
-
-def diffusionfct(ns,ngrid0,inputdataa,diffusiondata,dx,dt,velocity):
-	# advection -----
-	flux = (0.5*(velocity[:,1:]*inputdataa[:-1,1:]+velocity[:,:-1]*inputdataa[:-1,:-1])-
-		  0.5*0.5*abs(velocity[:,1:]+velocity[:,:-1])*(inputdataa[:-1,1:]-inputdataa[:-1,:-1]))*dt
-	inputdataa[:-1,1:-1] += -(flux[:,1:]-flux[:,:-1])/dx
-
-	# diffusion -----
-	densityvalue = np.zeros((ns,ngrid0+2+4),float)
-	diffusionvalue = np.zeros((ns,ngrid0+2+4),float)
-	densityvalue[:,2:-2] = inputdataa
-	diffusionvalue[:,2:-2] = diffusiondata
-	densityvalue[:,-2] = densityvalue[:,-1]=densityvalue[:,-3]
-	densityvalue[:,0] = densityvalue[:,1]=1*densityvalue[:,2]
-	diffusionvalue[:,0] = diffusionvalue[:,1]=diffusionvalue[:,2]
-	diffusionvalue[:,-1] = diffusionvalue[:,-2]=diffusionvalue[:,-3]
-	flow = -dt*0.5*(diffusionvalue[:,:-1]+diffusionvalue[:,1:])*(densityvalue[:,1:]-densityvalue[:,:-1])/dx
-	atd = densityvalue[:,1:-1]-(flow[:,1:]-flow[:,:-1])/dx
-	averagepart = 0.5*(densityvalue[:,1:]+densityvalue[:,:-1])
-	fvalueo = (averagepart[:,1:]-averagepart[:,:-1])*diffusionvalue[:,1:-1]/dx
-	fhigh = -dt*((7/12)*(fvalueo[:,2:-1]+fvalueo[:,1:-2])-(1/12)*(fvalueo[:,3:]+fvalueo[:,:-3]))
-	adif = fhigh[:]-flow[:,2:-2]
-	signmatrix = (adif>=0)*2.-1
-	AC = signmatrix*np.maximum(0,np.minimum(np.abs(adif),np.minimum(signmatrix*dx*(atd[:,3:]-atd[:,2:-1]),signmatrix*dx*(atd[:,1:-2]-atd[:,:-3]))))
-	return atd[:,2:-2]-(AC[:,1:]-AC[:,:-1])/dx
 	
 	
-	
-def diffusionfctE(ngrid0,inputdataa,diffusiondata,dx,dt,velocity):
+def driftDiffusionExplicitOperator(ngrid0,inputdataa,diffusiondata,dx,dt,velocity): # this needs to be either documented or simplified later or both
 	# advection ---- 
 	flux = (0.5*(velocity[1:]*inputdataa[1:]+velocity[:-1]*inputdataa[:-1])-
 		  0.5*0.5*abs(velocity[1:]+velocity[:-1])*(inputdataa[1:]-inputdataa[:-1]))*dt
@@ -74,7 +47,6 @@ def diffusionfctE(ngrid0,inputdataa,diffusiondata,dx,dt,velocity):
 def importtransportdiffusion():
 	#------ Importing mobility and diffusion as a function of efield---------------
 	#==============================================================================
-	#these lines of code are simply used to import the values of transport coefficient as a function of electric field	 from a text file tableEfield.txt
 	parameterSize = 999 # change this to get read dynamic value
 	importfile = np.loadtxt('table/tableEfield.txt',dtype=6*'float,'+'float',delimiter='\t',usecols=list(range(7)),skiprows=1,unpack=True)
 	mobilityInput = np.zeros((4,parameterSize),float)
@@ -83,7 +55,6 @@ def importtransportdiffusion():
 	diffusionInput[0,:] = np.array(importfile[3]);diffusionInput[1,:]=np.array(importfile[4]);diffusionInput[2,:]=np.array(importfile[5]);diffusionInput[3,:]=np.array(importfile[6])
 	#------------ Importing reaction rates as a function of efield-----------------
 	#==============================================================================
-	#these lines of code are simply used to import the values of transport coefficient as a function of electron energy from a text file tableEnergy.txt
 	npoints = 190 # change this to get dynamic value
 	energyionS = np.zeros((npoints),float)
 	energyionexc = np.zeros((npoints),float)
