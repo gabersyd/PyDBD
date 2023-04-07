@@ -21,10 +21,14 @@ def SparseLaplacianOperator(n,k1=-1,k2=0,k3=1):
 	
 def driftDiffusionExplicitOperator(ngrid0,inputdataa,diffusiondata,dx,dt,velocity): # this needs to be either documented or simplified later or both
 	# advection ---- 
+	inputdataa[0] = 0
+	inputdataa[-1] = 0
 	flux = (0.5*(velocity[1:]*inputdataa[1:]+velocity[:-1]*inputdataa[:-1])-
 		  0.5*0.5*abs(velocity[1:]+velocity[:-1])*(inputdataa[1:]-inputdataa[:-1]))*dt
-	inputdataa[1:-1] += -(flux[1:]-flux[:-1])/dx
+	#inputdataa[1:-1] += -(flux[1:]-flux[:-1])/dx
 	# diffusion ----
+	inputdataa[0] = inputdataa[1]
+	inputdataa[-1] = inputdataa[-2]
 	densityvalueE = np.zeros((ngrid0+2+4),float)
 	diffusionvalueE = np.zeros((ngrid0+2+4),float)
 	densityvalueE[2:-2] = inputdataa
@@ -41,7 +45,7 @@ def driftDiffusionExplicitOperator(ngrid0,inputdataa,diffusiondata,dx,dt,velocit
 	adif = fhigh-flow[2:-2]
 	signmatrix = (adif>=0)*2.-1
 	AC = signmatrix*np.maximum(0,np.minimum(np.abs(adif),np.minimum(signmatrix*dx*(atd[3:]-atd[2:-1]),signmatrix*dx*(atd[1:-2]-atd[:-3]))))
-	return (atd[2:-2]-(AC[1:]-AC[:-1])/dx)
+	return (atd[2:-2]-(AC[1:]-AC[:-1] + flux[1:]-flux[:-1])/dx)
 
 
 def importtransportdiffusion():
