@@ -1,7 +1,7 @@
 # ____________________________________________________________________________________
-#______________	 PYTHON CODE ON ID HELIUM DBD   (7-11-2017)  _____________________
-#______________				 SAURAV GAUTAM		 _______________________________
-#____________________________________________________________________________________
+#______________	 PYTHON CODE ON 1D ARGON PLASMA   (7-11-2017)  _______________________
+#______________				 SAURAV GAUTAM		 _____________________________________
+#_____________________________________________________________________________________
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -50,11 +50,10 @@ Kboltz = 1.380e-23						# Boltzmann constant
 dx = gasWidth*10**(-3)/(ngrid0+1.0)		# Grid size in meter
 inelec = gasWidth*10**(-3)		# total interelectrode separation
 ngrid = int(ngrid0+2)			# total number of grid points(2 dielectrics +gas medium + all edge points)
-gasdens = 2.504e25						# number density of gas at NTP (unit: m^-3) (change later)
 gasdens = (pressure * avogadro) / (gasConstant * temperature)  # ideal gas law
 townsendunit = 1.0/((gasdens)*1e-21)	# townsend factor to convert from V/m to townsends unit
 
-# remove after implementing arbitrary chemistry ---------------------
+# to be removed after implementing arbitrary chemistry ---------------------
 ns = 4										# total number of species
 nr = 5										# total number of chemical reactions
 
@@ -62,8 +61,6 @@ nr = 5										# total number of chemical reactions
 #-----------------------------------------------------------------------------------------------------
 ndensity = np.zeros((ns,ngrid0+2),float)	# number density of each species
 ncharge = np.array([-1,1,1,0])				# corresponding charge of the each species
-gMat = np.array([0,1,1,0])					# gamma matrix (boolean what produces secondary electrons)
-dMat = np.array([1,0,0,0])					# boolean, which species undergoes desportion from surface
 netcharge = np.zeros(ngrid,float)			# net charge at each grid points
 potentl = np.zeros(ngrid,float)				# potential at each grid points
 efield = np.zeros(ngrid0+2,float)			# electric field at each grid points
@@ -72,9 +69,6 @@ efieldPP = np.zeros(ngrid0+2,float)			# electric field at each grid points
 mobilityG = np.zeros((ns,ngrid0+2),float)	# mobility at each grid points
 diffusionG = np.zeros((ns,ngrid0+2),float)	# diffusion coefficient at grid points
 sourceG = np.zeros((nr,ngrid0+2),float)		# source at each grid points
-fluxLR = np.zeros((ns,2),float)				# particle flux towards left and right boundries
-CfluxLR = np.zeros((ns,2),float)			# particle flux towards left and right boundries
-efluxLR = np.zeros((2),float)				# energy flux towards the dielectric surface
 react = np.zeros((4,ngrid0+2),float)		# rate of production of each plasma species 
 R = np.zeros((5,ngrid0+2),float)			# reaction rate for individual reactions considered in this model 
 sigmaLR = np.zeros((ns,2),float)			# surface charge density
@@ -95,14 +89,15 @@ stepinterval1 = totaltime/totaldata1		# calculating approdimate time between two
 prevloc = 0									# accumulator (that will be used to take decision to save data)
 prevloc1 = 0								# accumulator (that will be used to take decision to save data)
 
-storedensity = np.zeros((totaldata+5,ns,ngrid0+2),float)	# number density	
-storenetcharge = np.zeros((totaldata+5,ngrid0+2),float)		# net charge
-storeefield = np.zeros((totaldata+5,ngrid0+2),float)		# elecritc field
-storepotentl = np.zeros((totaldata+5,ngrid0+2),float)		# potential
-storeenergy = np.zeros((totaldata+5,ngrid0+2),float)					# potential
-storeReact = np.zeros((totaldata+5,ns,ngrid0+2),float)					# production rate
-storeR = np.zeros((totaldata+5,nr,ngrid0+2),float)						# reaction rate
-storeCurrent = np.zeros(int(totaldata1+5),float)						# current
+storedensity = np.zeros((totaldata + 1,ns,ngrid0+2),float)	# number density	
+storenetcharge = np.zeros((totaldata + 1,ngrid0+2),float)		# net charge
+storeefield = np.zeros((totaldata + 1,ngrid0+2),float)		# elecritc field
+storepotentl = np.zeros((totaldata + 1,ngrid0+2),float)		# potential
+storeenergy = np.zeros((totaldata + 1,ngrid0+2),float)					# potential
+storeReact = np.zeros((totaldata + 1,ns,ngrid0+2),float)					# production rate
+storeR = np.zeros((totaldata + 1,nr,ngrid0+2),float)						# reaction rate
+storeCurrent = np.zeros(int(totaldata1 + 1),float)						# current
+storetime = np.zeros(int(totaldata1 + 1),float)						# current
 
 (mobilityInput,diffusionInput,energyionS,energyionexc,energyexcion) = myFunctions.importtransportdiffusion()
 poissonSparseMatrix = myFunctions.SparseLaplacianOperator(ngrid)   #poisson equation solving matrix
@@ -116,18 +111,13 @@ time = 0
 
 try:
 	while time<totaltime:# and elapsed<0.1 :
-		#print(time)
-		#===============================================================================================
 		time = time+dt
-
-		#-------------------------------
 		newloc = int(time/stepinterval)
 		if newloc > prevloc:
 			save = 1
 			prevloc = newloc
 		else:
 			save = 0
-		#-------------------------------
 			newloc1 = int(time/stepinterval1)
 		if newloc1>prevloc1:
 			save1 = 1
@@ -167,7 +157,7 @@ try:
 		#----------------------------------------------------------------------------------------------
 
 		#======================================================================================================
-		#								   *** DIFFUSION ***
+		#								   *** Particle and Energy Transport ***
 		#------------------------------------------------------------------------------------------------------
 		for loopDD in np.arange(ns):
 			ndensity[loopDD,1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0, ndensity[loopDD,:],diffusionG[loopDD,:],dx,dt,mobilityG[loopDD,]*efield)#solving Implictly for[0]
@@ -178,34 +168,32 @@ try:
 		#==================================================================================================
 		#						   *** POISSON'S EQUATION ***
 		#--------------------------------------------------------------------------------------------------
-		netcharge = ee*np.dot(ncharge,ndensity)					# calculating net charge
-		leftPot = 1.0*volt*np.sin(2*np.pi*time*frequencySource)	   					# applied voltage (left)
+		netcharge = ee * np.dot(ncharge,ndensity)					# calculating net charge
+		leftPot = 1.0 * volt * np.sin( 2 * np.pi * time * frequencySource)	   					# applied voltage (left)
 		rightpot = 0.0														# ground
-		chrgg =- (netcharge/e0)*dx*dx								 		# RHS matrix. <Read documentation>
+		chrgg =- (netcharge / e0) * dx * dx								 		# RHS matrix. <Read documentation>
 		chrgg[0] = leftPot													# left boundary condition
 		chrgg[-1] = rightpot										  		# right boundary condition
 		potentl = la.spsolve(poissonSparseMatrix,chrgg)			   			# solving system of Matrix equations
 		#--------------------------------------------------------------------------------------------------
 		#**calculate electric field as negative gradient of potential (Expressed in Townsend Unit)
-		efield[1:-1] =   -townsendunit*(potentl[2:]-potentl[:-2])/(2.0*dx)
-		efield[0] =   -townsendunit*(potentl[1]-potentl[0])/(dx)
-		efield[-1] =   -townsendunit*(potentl[-1]-potentl[-2])/(dx)
+		efield[1:-1] =   -townsendunit * (potentl[2:]-potentl[:-2]) / (2.0 * dx)
+		efield[0] =   -townsendunit * (potentl[1]-potentl[0]) / (dx)
+		efield[-1] =   -townsendunit * (potentl[-1]-potentl[-2]) / (dx)
 		#----------------------------------------------------------------------------------------------------------
 
 		#==================================================================================================
 		#					  *** TRANSPORT AND REACTION COEFFICIENTS ***
 		#--------------------------------------------------------------------------------------------------
-		mobilityG = np.transpose(ncharge*np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
-		diffusionG = myFunctions.Interpolation(efield,diffusionInput,1,990,0.01)/gasdens									# diffusion
-		efield[:] = efield[:]/townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
+		mobilityG = np.transpose( ncharge * np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
+		diffusionG = myFunctions.Interpolation( efield, diffusionInput, 1, 990, 0.01) / gasdens									# diffusion
+		efield[:] = efield[:] / townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
 		#------------------------------------------------------------------------------------------------
-		ekchindensity = ndensity[0].copy()
-		energyparticle = edensity/(ekchindensity+1e4)/ev
-		energyparticle[energyparticle>17] = 16.99
-		energyparticle[energyparticle<0.0] = 0
-		sourceG[0,:] = myFunctions.Interpolation(energyparticle,energyionS,10,10,0.1)		# reaction rate
-		sourceG[1,:] = myFunctions.Interpolation(energyparticle,energyionexc,10,10,0.1)	# reaction rate
-		sourceG[4,:] = myFunctions.Interpolation(energyparticle,energyexcion,10,10,0.1)	# reaction rate
+		energyparticle = edensity/(ndensity[0]+1e-4)/ev
+		energyparticle = np.clip(energyparticle, 0, 16.99)
+		sourceG[0,:] = myFunctions.Interpolation(energyparticle, energyionS, 10, 10, 0.1)		# reaction rate
+		sourceG[1,:] = myFunctions.Interpolation(energyparticle, energyionexc, 10, 10, 0.1)	# reaction rate
+		sourceG[4,:] = myFunctions.Interpolation(energyparticle, energyexcion, 10, 10, 0.1)	# reaction rate
 		#------------------------------------------------------------------------------------------------
 
 
@@ -213,19 +201,19 @@ try:
 		#				   *** BOUNDARY CONDITION (THERMAL VELICITY) ***
 		#========================================================================================================
 		#-------------------------------------------------------------------------------------------------------------
-		eTemp = (2/3)*(edensity)/(ndensity[0] + 1e-4)/Kboltz
+		eTemp = (2/3) * edensity / (ndensity[0] + 1e-4) / Kboltz
 		eTemp = np.clip(eTemp, mineTemp, maxeTemp)
-		vthermal = 1*(1/2)*(8*Kboltz*eTemp/(3.14*9.11e-31))**(1/2)
+		vthermal = (1/2) * (8 * Kboltz * eTemp/(3.14*9.11e-31)) ** (1/2)
 
-		ndensity[0,1] = (ndensity[0,1]*dx+dt*(-ndensity[0,1]*vthermal[1]))/dx
-		ndensity[0,-2] = (ndensity[0,-2]*dx+dt*(-ndensity[0,-2]*vthermal[1]))/dx
-		edensity[1] = (edensity[1]*dx+dt*(-(5/3)*edensity[1]*vthermal[-2]))/dx
-		edensity[-2] = (edensity[-2]*dx+dt*(-(5/3)*edensity[-2]*vthermal[-2]))/dx
+		ndensity[0,1] = (ndensity[0,1] * dx + dt * (-ndensity[0,1] * vthermal[1]))/dx
+		ndensity[0,-2] = (ndensity[0,-2] * dx + dt * (-ndensity[0,-2] * vthermal[1]))/dx
+		edensity[1] = (edensity[1] * dx + dt * (-(5/3) * edensity[1] * vthermal[-2]))/dx
+		edensity[-2] = (edensity[-2] * dx + dt * (-(5/3) * edensity[-2] * vthermal[-2]))/dx
 		#--------------------------------------------------------------------------------------------------------------
 
 		
 		# seed electron contribution -------
-		temmatrix = seedElectrons+0*ndensity[0].copy()
+		temmatrix = seedElectrons + 0 * ndensity[0].copy()
 		temmatrix[ndensity[0] > seedElectrons] = 0.	 
 		ndensity[0,1:-1] += temmatrix[1:-1]
 		ndensity[1,1:-1] += temmatrix[1:-1]	
@@ -255,6 +243,7 @@ try:
 			storepotentl[newloc]=potentl
 			storeenergy[newloc]=energyparticle
 			storeR[newloc]=R
+			storetime[newloc] = time
 		#-----------------------------------------------------------------------------------------------
 		if (save1 == 1):
 			storeCurrent[newloc1]=current
@@ -274,14 +263,14 @@ except Exception as e:
 speciesList = np.array(['electron','arpion','ar2pion','Ar*'])
 reactionList = np.array(['R1','R2','R3','R4', 'R5'])
 for ck in np.arange(ns):
-	myFunctions.plotImageAndSaveResult(speciesList[ck],storedensity[:,ck,:])
-	myFunctions.plotImageAndSaveResult('produc'+speciesList[ck],storeReact[:,ck,:])
-myFunctions.plotImageAndSaveResult('potential',storepotentl)
-myFunctions.plotImageAndSaveResult('netcharge',storenetcharge)
-myFunctions.plotImageAndSaveResult('efield',storeefield)
-myFunctions.plotImageAndSaveResult('energy',storeenergy)
+	myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,speciesList[ck],storedensity[:,ck,:] )
+	myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'produc'+speciesList[ck],storeReact[:,ck,:] )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'potential',storepotentl )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'netcharge',storenetcharge )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'efield',storeefield )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'energy',storeenergy )
 
 for ck in np.arange(nr):
-	myFunctions.plotImageAndSaveResult(reactionList[ck],storeR[:,ck,:])
-np.savetxt('output/current.txt',storeCurrent)
-np.savetxt('output/parameters.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
+	myFunctions.plotImageAndSaveResult( dx* np.arange(ngrid) , storetime,reactionList[ck],storeR[:,ck,:] )
+np.savetxt( 'output/current.txt',storeCurrent )
+np.savetxt( 'output/parameters.txt',np.array([newloc,ngrid0,ngrid,elapsed]) )

@@ -19,23 +19,19 @@ def SparseLaplacianOperator(n,k1=-1,k2=0,k3=1):
 #------------------------------------------------------------------------------------------------------------
 	
 	
-def driftDiffusionExplicitOperator(ngrid0,inputdataa,diffusiondata,dx,dt,velocity): # this needs to be either documented or simplified later or both
+def driftDiffusionExplicitOperator(ngrid0,density,diffusiondata,dx,dt,velocity): # this needs to be either documented or simplified later or both
 	# advection ---- 
-	inputdataa[0] = 0
-	inputdataa[-1] = 0
-	#if velocity[0] > 0:
-	#	velocity[0] = 0
-	#if velocity[-1] < 0:
-	#	velocity[-1] = 0
-	flux = (0.5*(velocity[1:]*inputdataa[1:]+velocity[:-1]*inputdataa[:-1])-
-		  0.5*0.5*abs(velocity[1:]+velocity[:-1])*(inputdataa[1:]-inputdataa[:-1]))*dt
+	density[0] = 0
+	density[-1] = 0
+	flux = (0.5*(velocity[1:]*density[1:]+velocity[:-1]*density[:-1])-
+		  0.5*0.5*abs(velocity[1:]+velocity[:-1])*(density[1:]-density[:-1]))*dt
 	
 	# diffusion ----
-	inputdataa[0] = inputdataa[1]
-	inputdataa[-1] = inputdataa[-2]
+	density[0] = density[1]
+	density[-1] = density[-2]
 	densityvalueE = np.zeros((ngrid0+2+4),float)
 	diffusionvalueE = np.zeros((ngrid0+2+4),float)
-	densityvalueE[2:-2] = inputdataa
+	densityvalueE[2:-2] = density
 	diffusionvalueE[2:-2] = diffusiondata
 	densityvalueE[-2:] = 1*densityvalueE[-3]
 	densityvalueE[0:2] = 1*densityvalueE[2]
@@ -106,10 +102,18 @@ def readParametersFromFile(param_name, filename):
 
 
 # ------ plotting and saving results ---- 
-def plotImageAndSaveResult(title,twoDMatrix):
+def plotImageAndSaveResult(gaparray , storetime,title,twoDMatrix):
 	plt.clf()
 	plt.imshow(np.transpose(twoDMatrix),aspect = 'auto')
 	plt.title(title)
 	plt.colorbar()
-	plt.savefig('output/' + title + '.png' , dpi=200)
+	y, x = twoDMatrix.shape
+	print(y,x)
+	print(storetime)
+	plt.ticklabel_format(axis='x',style='sci',scilimits=(1,4))
+	plt.xticks([0,int(y/4),int(y/2),int(3*y/4),int(y)],np.round((np.arange(5)/4)*max(gaparray)/1e-3,4))
+	plt.yticks([0,int(x/4),int(x/2),int(3*x/4),int(x)],np.round((np.arange(5)/4)*max(gaparray)/1e-3,4))
+	plt.xlabel('Time ($\mu s$)')
+	plt.ylabel('Gap ($mm$)')
+	plt.savefig('output/' + title + '.png' , dpi=200, bbox_inches = 'tight')
 	np.savetxt('output/' + title + '.txt',twoDMatrix)
