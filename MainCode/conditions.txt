@@ -11,4 +11,4 @@ frequency = 1e5                             # AC frequency
 timeStep   = 1e-12                              # time step
 total_AC_simulation_cycles = 10                  # total number of AC cycles to model. 
 gas_constant = 8.31                             # in J/(mol*K)
-enable_adaptive_time_step   = false             # enable or disable adaptive time
+enable_adaptive_time_step   = false             # enable or disable adaptive time 

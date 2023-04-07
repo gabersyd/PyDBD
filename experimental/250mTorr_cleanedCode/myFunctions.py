@@ -117,8 +117,8 @@ def plotImageAndSaveResult(gaparray , storetime, title, twoDMatrix):
 	plt.title(title)
 	plt.colorbar()
 	y, x = twoDMatrix.shape
-	plt.ticklabel_format(axis='x',style='sci',scilimits=(1,3))
-	plt.ticklabel_format(axis='y',style='sci',scilimits=(1,3))
+	plt.ticklabel_format(axis='x',style='sci',scilimits=(1,2))
+	plt.ticklabel_format(axis='y',style='sci',scilimits=(1,2))
 	plt.xticks([0,int(y/4),int(y/2),int(3*y/4),int(y)],np.round((np.arange(5)/4)*max(storetime)/1e-6,4))
 	plt.yticks([0,int(x/4),int(x/2),int(3*x/4),int(x)],np.round((np.arange(5)/4)*max(gaparray)/1e-3,4))
 	plt.xlabel('Time ($\mu s$)')
