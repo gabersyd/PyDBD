@@ -23,9 +23,13 @@ def driftDiffusionExplicitOperator(ngrid0,inputdataa,diffusiondata,dx,dt,velocit
 	# advection ---- 
 	inputdataa[0] = 0
 	inputdataa[-1] = 0
+	#if velocity[0] > 0:
+	#	velocity[0] = 0
+	#if velocity[-1] < 0:
+	#	velocity[-1] = 0
 	flux = (0.5*(velocity[1:]*inputdataa[1:]+velocity[:-1]*inputdataa[:-1])-
 		  0.5*0.5*abs(velocity[1:]+velocity[:-1])*(inputdataa[1:]-inputdataa[:-1]))*dt
-	#inputdataa[1:-1] += -(flux[1:]-flux[:-1])/dx
+	
 	# diffusion ----
 	inputdataa[0] = inputdataa[1]
 	inputdataa[-1] = inputdataa[-2]

@@ -31,6 +31,8 @@ useAdaptiveTime = bool((myFunctions.readParametersFromFile("enable_adaptive_time
 secondaryElectronEmission = float(myFunctions.readParametersFromFile("secondary_electron_emission","conditions.txt"))
 sectemp = float(myFunctions.readParametersFromFile("secondary_electron_temperature","conditions.txt"))
 seedElectrons = float(myFunctions.readParametersFromFile("seed_electron_density","conditions.txt"))
+maxeTemp = float(myFunctions.readParametersFromFile("electron_temp_max","conditions.txt"))
+mineTemp = float(myFunctions.readParametersFromFile("electron_temp_min","conditions.txt"))
 
 #remove later - - 
 print (ngrid0,gasWidth,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
@@ -194,8 +196,6 @@ try:
 		#					  *** TRANSPORT AND REACTION COEFFICIENTS ***
 		#--------------------------------------------------------------------------------------------------
 		mobilityG = np.transpose(ncharge*np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
-		mobilityG[:,0] = 0.0    # not allowing incomming particles
-		mobilityG[:,-1] = 0.0	# not allowing incomming particles
 		diffusionG = myFunctions.Interpolation(efield,diffusionInput,1,990,0.01)/gasdens									# diffusion
 		efield[:] = efield[:]/townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
 		#------------------------------------------------------------------------------------------------
@@ -203,20 +203,18 @@ try:
 		energyparticle = edensity/(ekchindensity+1e4)/ev
 		energyparticle[energyparticle>17] = 16.99
 		energyparticle[energyparticle<0.0] = 0
-		sourceG[0,:] = myFunctions.Interpolation(energyparticle,energyionS,10,15,0.01)		# reaction rate
-		sourceG[1,:] = myFunctions.Interpolation(energyparticle,energyionexc,10,15,0.01)	# reaction rate
-		sourceG[4,:] = myFunctions.Interpolation(energyparticle,energyexcion,10,15,0.01)	# reaction rate
+		sourceG[0,:] = myFunctions.Interpolation(energyparticle,energyionS,10,10,0.1)		# reaction rate
+		sourceG[1,:] = myFunctions.Interpolation(energyparticle,energyionexc,10,10,0.1)	# reaction rate
+		sourceG[4,:] = myFunctions.Interpolation(energyparticle,energyexcion,10,10,0.1)	# reaction rate
 		#------------------------------------------------------------------------------------------------
 
 
 		#========================================================================================================
-		#				   *** BOUNDARY (charge/energy accumulation at surface of dielectric) ***
+		#				   *** BOUNDARY CONDITION (THERMAL VELICITY) ***
 		#========================================================================================================
 		#-------------------------------------------------------------------------------------------------------------
-		velocity = mobilityG*efield	
-
 		eTemp = (2/3)*(edensity)/(ndensity[0] + 1e-4)/Kboltz
-		eTemp = np.clip(eTemp, 500, 11600*22)
+		eTemp = np.clip(eTemp, mineTemp, maxeTemp)
 		vthermal = 1*(1/2)*(8*Kboltz*eTemp/(3.14*9.11e-31))**(1/2)
 
 		ndensity[0,1] = (ndensity[0,1]*dx+dt*(-ndensity[0,1]*vthermal[1]))/dx
