@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import scipy.sparse.linalg as la
 import scipy.sparse as sparse
 import time as tm
@@ -102,14 +103,20 @@ def readParametersFromFile(param_name, filename):
 
 
 # ------ plotting and saving results ---- 
-def plotImageAndSaveResult(gaparray , storetime,title,twoDMatrix):
+def plotImageAndSaveResult(gaparray , storetime, title, twoDMatrix):
+	# Define the Modern colormap in Tecplot
+	tecplot_modern = [(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 
+					(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 
+					(0.0, 0.0, 0.5), (0.0, 0.0, 1.0), (0.0, 0.5, 1.0), 
+					(0.0, 1.0, 1.0), (0.5, 1.0, 0.5), (1.0, 1.0, 0.0), 
+					(1.0, 0.5, 0.0), (1.0, 0.0, 0.0), (0.5, 0.0, 0.0)]
+	# Create a ListedColormap object from the Tecplot Modern colormap
+	modern_cmap = mcolors.ListedColormap(tecplot_modern)
 	plt.clf()
-	plt.imshow(np.transpose(twoDMatrix),aspect = 'auto')
+	plt.imshow(np.transpose(twoDMatrix),aspect = 'auto', cmap = modern_cmap)
 	plt.title(title)
 	plt.colorbar()
 	y, x = twoDMatrix.shape
-	print(y,x)
-	print(storetime)
 	plt.ticklabel_format(axis='x',style='sci',scilimits=(1,4))
 	plt.xticks([0,int(y/4),int(y/2),int(3*y/4),int(y)],np.round((np.arange(5)/4)*max(gaparray)/1e-3,4))
 	plt.yticks([0,int(x/4),int(x/2),int(3*x/4),int(x)],np.round((np.arange(5)/4)*max(gaparray)/1e-3,4))

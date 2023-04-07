@@ -34,7 +34,7 @@ seedElectrons = float(myFunctions.readParametersFromFile("seed_electron_density"
 maxeTemp = float(myFunctions.readParametersFromFile("electron_temp_max","conditions.txt"))
 mineTemp = float(myFunctions.readParametersFromFile("electron_temp_min","conditions.txt"))
 
-#remove later - - 
+# Printing Conditions. remove later - - 
 print (ngrid0,gasWidth,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
 
 
@@ -128,16 +128,10 @@ try:
 
 		#===============================================================================================
 		#							   *** Energy Source ***
-		#-----------------------------------------------------------------------------------------------
-		temedensity = ndensity[0].copy()				# making a copy of the matrix 
-		temedensity[0] = 0.; temedensity[-1]=0.			# zero net inward flux from the boundary
-		dtemedensity = ndensity[0].copy()				# zero net inward flux from the boundaries
-		dtemedensity[0] = dtemedensity[1].copy()  		# zero inward flux from the boundary
-		dtemedensity[-1] = dtemedensity[-2].copy()		# zero inward flux from the boundary
-		juoleheating = (efield[1:-1]*mobilityG[0,1:-1]*temedensity[1:-1]-diffusionG[0,1:-1]*((dtemedensity[2:]-dtemedensity[:-2])/(2*dx)))  # Juole heating term (energy source)
+		juoleheating = (efield[1:-1]*mobilityG[0,1:-1]*ndensity[0,1:-1]-diffusionG[0,1:-1]*((ndensity[0,2:]-ndensity[0,:-2])/(2*dx)))  # Juole heating term (energy source)
 		energySource =- ee*juoleheating*efield[1:-1]-1*(15.80*ev*R[0,1:-1]+11.50*ev*R[1,1:-1]-15.80*ev*R[3,1:-1]+4.43*ev*R[4,1:-1])/dt
 		edensity[1:-1] = edensity[1:-1]+dt*energySource
-		#-----------------------------------------------------------------------------------------------
+
 
 		#========================================================================================================
 		#							   *** PARTICLE SOURCE TERM ***
@@ -161,7 +155,7 @@ try:
 		#------------------------------------------------------------------------------------------------------
 		for loopDD in np.arange(ns):
 			ndensity[loopDD,1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0, ndensity[loopDD,:],diffusionG[loopDD,:],dx,dt,mobilityG[loopDD,]*efield)#solving Implictly for[0]
-	
+
 		edensity[1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0,edensity,(5/3)*diffusionG[0],dx,dt,(5/3)*mobilityG[0]*efield)#solving Implictly for[0]
 
 
@@ -177,9 +171,9 @@ try:
 		potentl = la.spsolve(poissonSparseMatrix,chrgg)			   			# solving system of Matrix equations
 		#--------------------------------------------------------------------------------------------------
 		#**calculate electric field as negative gradient of potential (Expressed in Townsend Unit)
-		efield[1:-1] =   -townsendunit * (potentl[2:]-potentl[:-2]) / (2.0 * dx)
-		efield[0] =   -townsendunit * (potentl[1]-potentl[0]) / (dx)
-		efield[-1] =   -townsendunit * (potentl[-1]-potentl[-2]) / (dx)
+		efield[1:-1] =   - townsendunit * (potentl[2:]-potentl[:-2]) / (2.0 * dx)
+		efield[0] =   - townsendunit * (potentl[1]-potentl[0]) / (dx)
+		efield[-1] =   - townsendunit * (potentl[-1]-potentl[-2]) / (dx)
 		#----------------------------------------------------------------------------------------------------------
 
 		#==================================================================================================
@@ -233,9 +227,7 @@ try:
 
 
 
-		#===============================================================================================
-		#								   *** DATA STORAGE ***
-		#-----------------------------------------------------------------------------------------------
+		#======================================STORING RESULTS==========================================
 		if (save == 1):
 			storedensity[newloc,:,:]=ndensity[:,:]
 			storenetcharge[newloc]=netcharge
@@ -260,8 +252,13 @@ except Exception as e:
 
 # ----------------------------- Save Results ------------------------------
 # -------------------------------------------------------------------------
-speciesList = np.array(['electron','arpion','ar2pion','Ar*'])
-reactionList = np.array(['R1','R2','R3','R4', 'R5'])
+speciesList = np.array(['electron','Ar+','Ar2+','Ar*'])
+reactionList = np.array(['ionization',
+			 'excitation',
+			 'Dimer_formation',
+			 'R4', 
+			 'metastable_Ionization'])
+storedensity[storedensity<0] = seedElectrons
 for ck in np.arange(ns):
 	myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,speciesList[ck],storedensity[:,ck,:] )
 	myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'produc'+speciesList[ck],storeReact[:,ck,:] )
