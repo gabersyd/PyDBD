@@ -1,0 +1,19 @@
+gas_width = 25              # gap between two dielectrics in mm (i.e. plasma width)
+number_of_grids = 100       # total number (total number of grids)
+gas_pressure = 33.33        # pressure of gas in Pascals   
+voltage = 50.0              # AC voltage (peak not RMS)
+frequency = 13.56e6         # AC frequency
+secondary_electron_emission_coefficient = 0.0   # secondary emission coeff
+initial_number_density = 1e14                   # initial seed electron
+timeStep   = 1e-10                              # time step
+gas_temperature = 300.0                         # temperature of gas 
+
+# other settings ----------------
+total_AC_simulation_cycles = 50                  # total number of AC cycles to model. 
+gas_constant = 8.31                             # in J/(mol*K)
+enable_adaptive_time_step   = false             # enable or disable adaptive time
+secondary_electron_emission = 0.00              # secondary lectron emission coefficient
+secondary_electron_temperature = 11600          # secondary lectron emission temperature in Kelvins
+electron_temp_max = 116000          # max value of electron temp in kelvins
+electron_temp_min = 500          # min value of electron temp in kelvins
+seed_electron_density = 1e4          # electrons present due to cosmic microwave background (floor value)
