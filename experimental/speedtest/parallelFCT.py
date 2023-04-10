@@ -64,6 +64,7 @@ ncharge = np.array([-1,1,1,0])				# corresponding charge of the each species
 netcharge = np.zeros(ngrid,float)			# net charge at each grid points
 potentl = np.zeros(ngrid,float)				# potential at each grid points
 efield = np.zeros(ngrid0+2,float)			# electric field at each grid points
+efieldTd = np.zeros(ngrid0+2,float)			# electric field at each grid points
 efieldPP = np.zeros(ngrid0+2,float)			# electric field at each grid points
 
 mobilityG = np.zeros((ns,ngrid0+2),float)	# mobility at each grid points
@@ -161,6 +162,9 @@ try:
 		#------------------------------------------------------------------------------------------------------
 		for loopDD in np.arange(ns):
 			ndensity[loopDD,1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0, ndensity[loopDD,:],diffusionG[loopDD,:],dx,dt,mobilityG[loopDD,]*efield)#solving Implictly for[0]
+			mobilityG[loopDD] = ncharge[loopDD] * np.interp( np.abs(efieldTd), np.arange(990),  mobilityInput[loopDD, :990] ) / gasdens	# mobility
+			diffusionG[loopDD] = np.interp( np.abs(efieldTd), np.arange(990),  diffusionInput[loopDD, :990] ) / gasdens	# mobility
+
 
 		edensity[1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0,edensity,(5/3)*diffusionG[0],dx,dt,(5/3)*mobilityG[0]*efield)#solving Implictly for[0]
 
@@ -177,24 +181,31 @@ try:
 		potentl = la.spsolve(poissonSparseMatrix,chrgg)			   			# solving system of Matrix equations
 		#--------------------------------------------------------------------------------------------------
 		#**calculate electric field as negative gradient of potential (Expressed in Townsend Unit)
-		efield[1:-1] =   - townsendunit * (potentl[2:]-potentl[:-2]) / (2.0 * dx)
-		efield[0] =   - townsendunit * (potentl[1]-potentl[0]) / (dx)
-		efield[-1] =   - townsendunit * (potentl[-1]-potentl[-2]) / (dx)
+		efield[1:-1] =   - (potentl[2:] - potentl[:-2]) / (2.0 * dx)
+		efield[0] =   - (potentl[1] - potentl[0]) / dx
+		efield[-1] =   - (potentl[-1] - potentl[-2]) / dx
+		efieldTd = townsendunit * efield[:]
 		#----------------------------------------------------------------------------------------------------------
 		inst3 = tm.time()
 
 		#==================================================================================================
 		#					  *** TRANSPORT AND REACTION COEFFICIENTS ***
 		#--------------------------------------------------------------------------------------------------
-		mobilityG = np.transpose( ncharge * np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
-		diffusionG = myFunctions.Interpolation( efield, diffusionInput, 1, 990, 0.01) / gasdens									# diffusion
-		efield[:] = efield[:] / townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
+		#mobilityG[0] = ncharge[0] * np.interp( np.abs(efieldTd), np.arange(990),  mobilityInput[0, :990] ) / gasdens	# mobility
+		#mobilityG[1] = ncharge[1] * np.interp( np.abs(efieldTd), np.arange(990),  mobilityInput[1, :990] ) / gasdens	# mobility
+		#mobilityG[2] = ncharge[2] * np.interp( np.abs(efieldTd), np.arange(990),  mobilityInput[2, :990] ) / gasdens	# mobility
+		#mobilityG[3] = ncharge[3] * np.interp( np.abs(efieldTd), np.arange(990),  mobilityInput[3, :990] ) / gasdens	# mobility
+		#diffusionG[0] = np.interp( np.abs(efieldTd), np.arange(990),  diffusionInput[0, :990] ) / gasdens	# mobility
+		#diffusionG[1] = np.interp( np.abs(efieldTd), np.arange(990),  diffusionInput[1, :990] ) / gasdens	# mobility
+		#diffusionG[2] = np.interp( np.abs(efieldTd), np.arange(990),  diffusionInput[2, :990] ) / gasdens	# mobility
+		#diffusionG[3] = np.interp( np.abs(efieldTd), np.arange(990),  diffusionInput[3, :990] ) / gasdens	# mobility
+
 		#------------------------------------------------------------------------------------------------
 		energyparticle = edensity/(ndensity[0]+1e-4)/ev
 		energyparticle = np.clip(energyparticle, 0, 16.99)
-		sourceG[0,:] = myFunctions.Interpolation(energyparticle, energyionS, 10, 10, 0.1)		# reaction rate
-		sourceG[1,:] = myFunctions.Interpolation(energyparticle, energyionexc, 10, 10, 0.1)	# reaction rate
-		sourceG[4,:] = myFunctions.Interpolation(energyparticle, energyexcion, 10, 10, 0.1)	# reaction rate
+		sourceG[0] = np.interp(energyparticle, np.arange(200)/10,  energyionS) 	# reaction rate
+		sourceG[1] = np.interp(energyparticle, np.arange(200)/10,  energyionexc) 	# reaction rate
+		sourceG[2] = np.interp(energyparticle, np.arange(200)/10,  energyexcion) 	# reaction rate
 		#------------------------------------------------------------------------------------------------
 		inst4 = tm.time()
 
