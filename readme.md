@@ -1,4 +1,4 @@
-PyDBD is a 1D python code developed to generate results that are reported in this publication: https://iopscience.iop.org/article/10.1088/2058-6272/ac241f
+PyDBD is a 1D python code written to generate results that are reported in this publication: https://iopscience.iop.org/article/10.1088/2058-6272/ac241f
 
 Besides DBD simulation the code is also capable of modeling microplasma. The examples of microplasma are also included in this repository. 
 
