@@ -1,7 +1,7 @@
-# ____________________________________________________________________________________
-#______________	 PYTHON CODE ON ID HELIUM DBD   (7-11-2017)  _____________________
-#______________				 SAURAV GAUTAM		 _______________________________
-#____________________________________________________________________________________
+# ___________________________________________________________________________________________
+#______________  PYTHON CODE ON 1D ARGON PLASMA   (04-09-2023)  _____________________________
+# to cite the code please cite :: https://iopscience.iop.org/article/10.1088/2058-6272/ac241f
+#_____________________________________________________________________________________________
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -28,8 +28,13 @@ dt = float(myFunctions.readParametersFromFile("timeStep","conditions.txt"))
 totalcycles = int(myFunctions.readParametersFromFile("total_AC_simulation_cycles","conditions.txt"))
 gasConstant = float(myFunctions.readParametersFromFile("gas_constant","conditions.txt"))
 useAdaptiveTime = bool((myFunctions.readParametersFromFile("enable_adaptive_time_stepping","conditions.txt"))) # feature not used here
+secondaryElectronEmission = float(myFunctions.readParametersFromFile("secondary_electron_emission","conditions.txt"))
+sectemp = float(myFunctions.readParametersFromFile("secondary_electron_temperature","conditions.txt"))
+seedElectrons = float(myFunctions.readParametersFromFile("seed_electron_density","conditions.txt"))
+maxeTemp = float(myFunctions.readParametersFromFile("electron_temp_max","conditions.txt"))
+mineTemp = float(myFunctions.readParametersFromFile("electron_temp_min","conditions.txt"))
 
-#remove later - - 
+# Printing Conditions. remove later - - 
 print (ngrid0,gasWidth,pressure,temperature,gamma,volt,frequencySource,initialNumberDensity,dt,totalcycles)
 
 
@@ -45,22 +50,17 @@ Kboltz = 1.380e-23						# Boltzmann constant
 dx = gasWidth*10**(-3)/(ngrid0+1.0)		# Grid size in meter
 inelec = gasWidth*10**(-3)		# total interelectrode separation
 ngrid = int(ngrid0+2)			# total number of grid points(2 dielectrics +gas medium + all edge points)
-gasdens = 2.504e25						# number density of gas at NTP (unit: m^-3) (change later)
 gasdens = (pressure * avogadro) / (gasConstant * temperature)  # ideal gas law
 townsendunit = 1.0/((gasdens)*1e-21)	# townsend factor to convert from V/m to townsends unit
 
-
-# remove after implementing arbitrary chemistry ---------------------
+# to be removed after implementing arbitrary chemistry ---------------------
 ns = 4										# total number of species
 nr = 5										# total number of chemical reactions
-
 
 #*** Initialization
 #-----------------------------------------------------------------------------------------------------
 ndensity = np.zeros((ns,ngrid0+2),float)	# number density of each species
 ncharge = np.array([-1,1,1,0])				# corresponding charge of the each species
-gMat = np.array([0,1,1,0])					# gamma matrix (boolean what produces secondary electrons)
-dMat = np.array([1,0,0,0])					# boolean, which species undergoes desportion from surface
 netcharge = np.zeros(ngrid,float)			# net charge at each grid points
 potentl = np.zeros(ngrid,float)				# potential at each grid points
 efield = np.zeros(ngrid0+2,float)			# electric field at each grid points
@@ -69,9 +69,6 @@ efieldPP = np.zeros(ngrid0+2,float)			# electric field at each grid points
 mobilityG = np.zeros((ns,ngrid0+2),float)	# mobility at each grid points
 diffusionG = np.zeros((ns,ngrid0+2),float)	# diffusion coefficient at grid points
 sourceG = np.zeros((nr,ngrid0+2),float)		# source at each grid points
-fluxLR = np.zeros((ns,2),float)				# particle flux towards left and right boundries
-CfluxLR = np.zeros((ns,2),float)			# particle flux towards left and right boundries
-efluxLR = np.zeros((2),float)				# energy flux towards the dielectric surface
 react = np.zeros((4,ngrid0+2),float)		# rate of production of each plasma species 
 R = np.zeros((5,ngrid0+2),float)			# reaction rate for individual reactions considered in this model 
 sigmaLR = np.zeros((ns,2),float)			# surface charge density
@@ -89,21 +86,18 @@ stepinterval = totaltime/totaldata			# calculating approdimate time between two 
 totaldata1 = totalcycles*datapercycle1		# calculation of how many data will there be in total
 stepinterval1 = totaltime/totaldata1		# calculating approdimate time between two saving points
 
-
 prevloc = 0									# accumulator (that will be used to take decision to save data)
 prevloc1 = 0								# accumulator (that will be used to take decision to save data)
 
-storedensity = np.zeros((totaldata+5,ns,ngrid0+2),float)				# number density	
-storenetcharge = np.zeros((totaldata+5,ngrid0+2),float)		# net charge
-storeefield = np.zeros((totaldata+5,ngrid0+2),float)					# elecritc field
-storepotentl = np.zeros((totaldata+5,ngrid0+2),float)		# potential
-storeenergy = np.zeros((totaldata+5,ngrid0+2),float)					# potential
-storeReact = np.zeros((totaldata+5,ns,ngrid0+2),float)					# production rate
-storeR = np.zeros((totaldata+5,nr,ngrid0+2),float)						# reaction rate
-
-
-storeCurrent = np.zeros(int(totaldata1+5),float)						# current
-
+storedensity = np.zeros((totaldata + 1,ns,ngrid0+2),float)	# number density	
+storenetcharge = np.zeros((totaldata + 1,ngrid0+2),float)		# net charge
+storeefield = np.zeros((totaldata + 1,ngrid0+2),float)		# elecritc field
+storepotentl = np.zeros((totaldata + 1,ngrid0+2),float)		# potential
+storeenergy = np.zeros((totaldata + 1,ngrid0+2),float)					# potential
+storeReact = np.zeros((totaldata + 1,ns,ngrid0+2),float)					# production rate
+storeR = np.zeros((totaldata + 1,nr,ngrid0+2),float)						# reaction rate
+storeCurrent = np.zeros(int(totaldata1 + 1),float)						# current
+storetime = np.zeros(int(totaldata1 + 1),float)						# current
 
 (mobilityInput,diffusionInput,energyionS,energyionexc,energyexcion) = myFunctions.importtransportdiffusion()
 poissonSparseMatrix = myFunctions.SparseLaplacianOperator(ngrid)   #poisson equation solving matrix
@@ -117,18 +111,13 @@ time = 0
 
 try:
 	while time<totaltime:# and elapsed<0.1 :
-		#print(time)
-		#===============================================================================================
 		time = time+dt
-
-		#-------------------------------
 		newloc = int(time/stepinterval)
 		if newloc > prevloc:
 			save = 1
 			prevloc = newloc
 		else:
 			save = 0
-		#-------------------------------
 			newloc1 = int(time/stepinterval1)
 		if newloc1>prevloc1:
 			save1 = 1
@@ -137,20 +126,11 @@ try:
 			save1 = 0
 		#-----------------------------------------------------------------------------------------------
 
-
 		#===============================================================================================
 		#							   *** Energy Source ***
-		#-----------------------------------------------------------------------------------------------
-		temedensity = ndensity[0].copy()				# making a copy of the matrix 
-		temedensity[0] = 0.; temedensity[-1]=0.			# zero net inward flux from the boundary
-		dtemedensity = ndensity[0].copy()				# zero net inward flux from the boundaries
-		dtemedensity[0] = dtemedensity[1].copy()  		# zero inward flux from the boundary
-		dtemedensity[-1] = dtemedensity[-2].copy()		# zero inward flux from the boundary
-		juoleheating = (efield[1:-1]*mobilityG[0,1:-1]*temedensity[1:-1]-diffusionG[0,1:-1]*((dtemedensity[2:]-dtemedensity[:-2])/(2*dx)))  # Juole heating term (energy source)
+		juoleheating = (efield[1:-1]*mobilityG[0,1:-1]*ndensity[0,1:-1]-diffusionG[0,1:-1]*((ndensity[0,2:]-ndensity[0,:-2])/(2*dx)))  # Juole heating term (energy source)
 		energySource =- ee*juoleheating*efield[1:-1]-1*(15.80*ev*R[0,1:-1]+11.50*ev*R[1,1:-1]-15.80*ev*R[3,1:-1]+4.43*ev*R[4,1:-1])/dt
 		edensity[1:-1] = edensity[1:-1]+dt*energySource
-		#-----------------------------------------------------------------------------------------------
-
 
 
 		#========================================================================================================
@@ -170,176 +150,72 @@ try:
 		ndensity[:,1:-1] += 1*react[:,1:-1]		# adding newly produced particles to the gas
 		#----------------------------------------------------------------------------------------------
 
-
-		#==================================================================================================
-		#					  *** MAKING A COPY OF THE NUMBER DENSITY ARRAY ***
-		#--------------------------------------------------------------------------------------------------
-		temporaryCopy = ndensity.copy()								  
-		etemporaryCopy = edensity.copy()								 
-		#--------------------------------------------------------------------------------------------------  
 		#======================================================================================================
-		#								   *** DIFFUSION ***
+		#								   *** Particle and Energy Transport ***
 		#------------------------------------------------------------------------------------------------------
-		temporaryCopy[:,0] = temporaryCopy[:,1].copy()									# mirror boundary (left)
-		temporaryCopy[:,-1] = temporaryCopy[:,-2].copy()								# mirror boundary (right)
-		temporaryCopy[:,1:-1] = myFunctions.diffusionfct(ns,ngrid0, temporaryCopy[:],diffusionG[:],dx,dt)#solving Implictly for[0]
-		#temporaryCopy[1,1:-1] = diffusionfct(temporaryCopy[1],diffusionG[1],dx,dt)#solving Implictly for[1]
-		#temporaryCopy[2,1:-1] = diffusionfct(temporaryCopy[2],diffusionG[2],dx,dt)#solving Implictly for[2]
-		#temporaryCopy[3,1:-1] = diffusionfct(temporaryCopy[3],diffusionG[3],dx,dt)#solving Implictly for[3]
-		#-------------------------------------------------------------------------------------------------------
-		etemporaryCopy[0] = etemporaryCopy[1].copy()									# mirror boundary (left)
-		etemporaryCopy[-1] = etemporaryCopy[-2].copy()									# mirror boundary (right)
-		etemporaryCopy[1:-1] = myFunctions.diffusionfctE(ngrid0,etemporaryCopy,(5/3)*diffusionG[0],dx,dt)#solving Implictly for[0]
-		#-------------------------------------------------------------------------------------------------------
-		#=======================================================================================================
-		#--- copying back to the original matrix ---------------------------------------------------------------
-		ndensity[:,1:-1] = temporaryCopy[:,1:-1].copy()
-		edensity[1:-1] = etemporaryCopy[1:-1].copy()
-		#--------------------------------------------------------------------------------------------------------   
+		for loopDD in np.arange(ns):
+			ndensity[loopDD,1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0, ndensity[loopDD,:],diffusionG[loopDD,:],dx,dt,mobilityG[loopDD,]*efield)#solving Implictly for[0]
 
+		edensity[1:-1] = myFunctions.driftDiffusionExplicitOperator(ngrid0,edensity,(5/3)*diffusionG[0],dx,dt,(5/3)*mobilityG[0]*efield)#solving Implictly for[0]
 
 
 		#==================================================================================================
 		#						   *** POISSON'S EQUATION ***
 		#--------------------------------------------------------------------------------------------------
-		netcharge = ee*np.dot(ncharge,ndensity)					# calculating net charge
-		#netcharge[nwd1+1:nwd1+1+ngrid0] = 0.						 				# quasi neutrality condition
-		leftPot = 1.0*volt*np.sin(2*np.pi*time*frequencySource)	   					# applied voltage (left)
-		rightpot = 0.0*volt*np.sin(2*np.pi*time*frequencySource)	  				# applied voltage (right)
-		chrgg =- (netcharge/e0)*dx*dx								 		# RHS matrix. <Read documentation>
+		netcharge = ee * np.dot(ncharge,ndensity)					# calculating net charge
+		leftPot = 1.0 * volt * np.sin( 2 * np.pi * time * frequencySource)	   					# applied voltage (left)
+		rightpot = 0.0														# ground
+		chrgg =- (netcharge / e0) * dx * dx								 		# RHS matrix. <Read documentation>
 		chrgg[0] = leftPot													# left boundary condition
 		chrgg[-1] = rightpot										  		# right boundary condition
 		potentl = la.spsolve(poissonSparseMatrix,chrgg)			   			# solving system of Matrix equations
 		#--------------------------------------------------------------------------------------------------
 		#**calculate electric field as negative gradient of potential (Expressed in Townsend Unit)
-		efield[1:-1] =   -townsendunit*(potentl[2:]-potentl[:-2])/(2.0*dx)
-		efield[0] =   -townsendunit*(potentl[1]-potentl[0])/(dx)
-		efield[-1] =   -townsendunit*(potentl[-1]-potentl[-2])/(dx)
+		efield[1:-1] =   - townsendunit * (potentl[2:]-potentl[:-2]) / (2.0 * dx)
+		efield[0] =   - townsendunit * (potentl[1]-potentl[0]) / (dx)
+		efield[-1] =   - townsendunit * (potentl[-1]-potentl[-2]) / (dx)
 		#----------------------------------------------------------------------------------------------------------
-
-
 
 		#==================================================================================================
 		#					  *** TRANSPORT AND REACTION COEFFICIENTS ***
 		#--------------------------------------------------------------------------------------------------
-		mobilityG = np.transpose(ncharge*np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
-		diffusionG = myFunctions.Interpolation(efield,diffusionInput,1,990,0.01)/gasdens									# diffusion
-		efield[:] = efield[:]/townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
+		mobilityG = np.transpose( ncharge * np.transpose(myFunctions.Interpolation(efield,mobilityInput,1,990,0.01)))/gasdens	# mobility
+		diffusionG = myFunctions.Interpolation( efield, diffusionInput, 1, 990, 0.01) / gasdens									# diffusion
+		efield[:] = efield[:] / townsendunit #converting Efield back to SI(V/m) unit from Townsend's unit
 		#------------------------------------------------------------------------------------------------
-		ekchindensity = ndensity[0].copy()
-		energyparticle = edensity/(ekchindensity+1e4)/ev
-		energyparticle[energyparticle>17] = 16.99
-		energyparticle[energyparticle<0.0] = 0
-		sourceG[0,:] = myFunctions.Interpolation(energyparticle,energyionS,10,15,0.01)		# reaction rate
-		sourceG[1,:] = myFunctions.Interpolation(energyparticle,energyionexc,10,15,0.01)	# reaction rate
-		sourceG[4,:] = myFunctions.Interpolation(energyparticle,energyexcion,10,15,0.01)	# reaction rate
+		energyparticle = edensity/(ndensity[0]+1e-4)/ev
+		energyparticle = np.clip(energyparticle, 0, 16.99)
+		sourceG[0,:] = myFunctions.Interpolation(energyparticle, energyionS, 10, 10, 0.1)		# reaction rate
+		sourceG[1,:] = myFunctions.Interpolation(energyparticle, energyionexc, 10, 10, 0.1)	# reaction rate
+		sourceG[4,:] = myFunctions.Interpolation(energyparticle, energyexcion, 10, 10, 0.1)	# reaction rate
 		#------------------------------------------------------------------------------------------------
 
 
-
-		#==================================================================================================
-		#					  *** MAKING A COPY OF THE NUMBER DENSITY ARRAY ***
-		#--------------------------------------------------------------------------------------------------
-		temporaryCopy = ndensity.copy()								  
-		etemporaryCopy = edensity.copy()								 
-		#-------------------------------------------------------------------------------------------------- 
-		#==========================================================================================================
-		#								   *** ADVECTION ***
-		#----------------------------------------------------------------------------------------------------------
-		temporaryCopy[:-1,0] = 0		# BC- Zero inward flux in advection
-		temporaryCopy[:-1,-1] = 0		# BC- Zero inward flux in advection
-
-		temporaryCopy[:-1,1:-1] = myFunctions.AdvectionAlgorithm(dx,dt,mobilityG[:-1]*efield,temporaryCopy[:-1]) #solving for electron
-		#----------------------------------------------------------------------------------------------------------
-		etemporaryCopy[0] = 0			# BC- Zero inward flux in energy advection
-		etemporaryCopy[-1] = 0			# BC- Zero inward flux in energy advection
-		etemporaryCopy[1:-1] = myFunctions.AdvectionAlgorithmE(dx,dt,(5/3)*mobilityG[0]*efield,etemporaryCopy) #solving for energy
-		#----------------------------------------------------------------------------------------------------------
-		#=======================================================================================================
-		#--- copying back to the original matrix ---------------------------------------------------------------
-		ndensity[:,1:-1] = temporaryCopy[:,1:-1].copy()
-		edensity[1:-1] = etemporaryCopy[1:-1].copy()
-		#--------------------------------------------------------------------------------------------------------
-
-
 		#========================================================================================================
-		#				   *** BOUNDARY (charge/energy accumulation at surface of dielectric) ***
+		#				   *** BOUNDARY CONDITION (THERMAL VELICITY) ***
 		#========================================================================================================
 		#-------------------------------------------------------------------------------------------------------------
-		#thermal velocity cotribution---------------------------------------------------------------------------------
-		stickingProb = 1.0
-		tempL = (2/3)*np.average(edensity[1:5])/np.average(ndensity[0,1:5])/Kboltz
-		vthL = 1*(1/2)*(8*Kboltz*tempL/(3.14*9.11e-31))**(1/2)
-		tempR = (2/3)*np.average(edensity[-5:-1])/np.average(ndensity[0,-5:-1])/Kboltz
-		vthR = 1*(1/2)*(8*Kboltz*tempR/(3.14*9.11e-31))**(1/2)
+		eTemp = (2/3) * edensity / (ndensity[0] + 1e-4) / Kboltz
+		eTemp = np.clip(eTemp, mineTemp, maxeTemp)
+		vthermal = (1/2) * (8 * Kboltz * eTemp/(3.14*9.11e-31)) ** (1/2)
 
-		sigvthL = stickingProb*ndensity[0,1]*vthL;sigvthR=stickingProb*ndensity[0,-2]*vthR
-		esigvthL = stickingProb*(5/3)*edensity[1]*vthL;esigvthR=stickingProb*(5/3)*edensity[-2]*vthR
-
-		#-- drift velocity flux--------------------------------------
-		velocity = mobilityG*efield															   #velocity of particles
-		fluxLR[:,0] =- (ndensity[:,1]*velocity[:,1]-0*diffusionG[:,1]*(ndensity[:,2]-ndensity[:,1]))#+gamma*gMat*ndensity[:,1]*velocity[:,1])	 #flux at left dielectric
-		fluxLR[:,1] = (ndensity[:,-2]*velocity[:,-2]-0*diffusionG[:,-2]*(ndensity[:,-2]-ndensity[:,-3]))#+gamma*gMat*ndensity[:,-2]*velocity[:,-2])  #flux at right dielectric
-		fluxLR[fluxLR<0] = 0.
-		#------------------------------------------------------------
-		efluxLR[0] =- ((5/3)*edensity[1]*velocity[0,1]-0*(5/3)*diffusionG[0,1]*(edensity[2]-edensity[1]))#+gamma*gMat*ndensity[:,1]*velocity[:,1])	 #flux at left dielectric
-		efluxLR[1] = ((5/3)*edensity[-2]*velocity[0,-2]-0*(5/3)*diffusionG[0,-2]*(edensity[-2]-edensity[-3]))#+gamma*gMat*ndensity[:,-2]*velocity[:,-2])  #flux at right dielectric
-		efluxLR[efluxLR<0] = 0.
-		#----------secondary electron emission-----------------------
-		secondary1 = (fluxLR[1,0])*gamma; secondary11=fluxLR[1,1]*gamma
-		secondary2 = (fluxLR[2,0])*gamma; secondary22=fluxLR[2,1]*gamma
-		#------------------- calculating the total flux
-		fluxLR[0,0] = (stickingProb*fluxLR[0,0]+sigvthL)
-		fluxLR[0,1] = (stickingProb*fluxLR[0,1]+sigvthR)
-		fluxLR[1,0] = fluxLR[1,0]+secondary1
-		fluxLR[1,1] = fluxLR[1,1]+secondary11
-		fluxLR[2,0] = fluxLR[2,0]+secondary2
-		fluxLR[2,1] = fluxLR[2,1]+secondary22
-		#----------------------------------------------
-		efluxLR[0] = (stickingProb*efluxLR[0]+esigvthL)#-e0*secondary1-e0*secondary11
-		efluxLR[1] = (stickingProb*efluxLR[1]+esigvthR)#-e0*secondary2-e0*secondary22
-		#----------------------------------------------
-
-		#----------finally surface charge calculation ---------------
-		sigmaLR[:-1,0] = sigmaLR[:-1,0]+dt*fluxLR[:-1,0]
-		sigmaLR[:-1,1] = sigmaLR[:-1,1]+dt*fluxLR[:-1,1]
-		esigmaLR[0] = esigmaLR[0]+dt*efluxLR[0]
-		esigmaLR[1] = esigmaLR[1]+dt*efluxLR[1]
-
-
-		#-------------------------------------------------------------------------------------------------------------
-		#------------------------------- before correction -----------------------------------------------------------
-		#ndensity[:-1,0] = sigmaLR[:-1,0]/dx	#volume charge density approximation due to charge accumulation on left dielectric			
-		#ndensity[:-1,-1] = sigmaLR[:-1,1]/dx   #volume charge density approximation due to charge accumulation on left dielectric
-		#-------------------------------------------------------------------------------------------------------------
-		ndensity[0,1] = (ndensity[0,1]*dx+dt*(secondary1+secondary2-sigvthL+(1-stickingProb)*fluxLR[0,0]))/dx
-		ndensity[0,-2] = (ndensity[0,-2]*dx+dt*(secondary11+secondary22-sigvthR+(1-stickingProb)*fluxLR[0,1]))/dx
-		#--------------------------------------------------------------------------------------------------------------
-		edensity[1] = (edensity[1]*dx+dt*((3/2)*Kboltz*tempL*(secondary1+secondary2)-esigvthL+(1-stickingProb)*(efluxLR[0])))/dx
-		edensity[-2] = (edensity[-2]*dx+dt*((3/2)*Kboltz*tempR*(secondary11+secondary22)-esigvthR+(1-stickingProb)*(efluxLR[1])))/dx
-		#--------------------------------------------------------------------------------------------------------------
-		ndensity[ndensity<0] = 0.	   # imposing non-negative value of particle density
-		edensity[edensity<0] = 0.	   # imposing non-negative value of energy
+		ndensity[0,1] = (ndensity[0,1] * dx + dt * (-ndensity[0,1] * vthermal[1]))/dx
+		ndensity[0,-2] = (ndensity[0,-2] * dx + dt * (-ndensity[0,-2] * vthermal[1]))/dx
+		edensity[1] = (edensity[1] * dx + dt * (-(5/3) * edensity[1] * vthermal[-2]))/dx
+		edensity[-2] = (edensity[-2] * dx + dt * (-(5/3) * edensity[-2] * vthermal[-2]))/dx
 		#--------------------------------------------------------------------------------------------------------------
 
-
-
-		#==============================================================================================
-		#					   *** contribution of cosmic background radiation ***
-		#----------------------------------------------------------------------------------------------
-		temmatrix = 1e4+0*ndensity[0].copy()
-		temmatrix[ndensity[0]>1e4] = 0.	 
+		
+		# seed electron contribution -------
+		temmatrix = seedElectrons + 0 * ndensity[0].copy()
+		temmatrix[ndensity[0] > seedElectrons] = 0.	 
 		ndensity[0,1:-1] += temmatrix[1:-1]
 		ndensity[1,1:-1] += temmatrix[1:-1]	
 		#----------------------------------------------------------------------------------------------
 
-
-
 		#===============================================================================================
 		#							*** CURRENT CALCULATION ***
 		#------------------------------------------------------------------------------------------------
-		#current = (ee*(efield[200]*mobilityG[1,200]*ndensity[1,200]+1*efield[200]*mobilityG[2,200]*ndensity[2,200]+   
-		#															  efield[200]*mobilityG[0,200]*ndensity[0,200])*dx)
 		current = (ee*np.sum((efield[2:-2]*mobilityG[1,2:-2]*ndensity[1,2:-2]
 																  +  1*efield[2:-2]*mobilityG[2,2:-2]*ndensity[2,2:-2]+   
 															  efield[2:-2]*mobilityG[0,2:-2]*ndensity[0,2:-2]-  
@@ -351,9 +227,7 @@ try:
 
 
 
-		#===============================================================================================
-		#								   *** DATA STORAGE ***
-		#-----------------------------------------------------------------------------------------------
+		#======================================STORING RESULTS==========================================
 		if (save == 1):
 			storedensity[newloc,:,:]=ndensity[:,:]
 			storenetcharge[newloc]=netcharge
@@ -361,6 +235,7 @@ try:
 			storepotentl[newloc]=potentl
 			storeenergy[newloc]=energyparticle
 			storeR[newloc]=R
+			storetime[newloc] = time
 		#-----------------------------------------------------------------------------------------------
 		if (save1 == 1):
 			storeCurrent[newloc1]=current
@@ -369,86 +244,30 @@ try:
 		elapsed = (currenttime-starttime)/3600
 except Exception as e: 
 	print(e)
-	rank=1
-	#add some code that will save all intermediate results
+	rank = 1
+	# TODO: add some code that will save all intermediate results
 	np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
-	np.savetxt('out/error.txt',str(e))
-
-#from mpi4py import MPI
-#comm = MPI.COMM_WORLD
-#size = comm.Get_size()
-#rank = comm.Get_rank()
-
-rank = 1
-numberconditions = 100
-volt = np.zeros(numberconditions,float)
-freq = np.zeros(numberconditions,float)
-gap = np.zeros(numberconditions,float)
-file = open('table/outconditions.txt')
-for data in np.arange(numberconditions):
-	line = file.readline()
-	lineSplit = line.split()
-	volt[data] = lineSplit[0]
-	freq[data] = lineSplit[1]
-	gap[data] = lineSplit[2]
-#print(volt,freq,gap)
+	np.savetxt('output/error.txt',str(e))
 
 
-np.savetxt('output/parameters'+str(rank)+'.txt',np.array([newloc,ngrid0,ngrid,elapsed]))
-
-
-
-# ----------------------------- Output ------------------------------------
+# ----------------------------- Save Results ------------------------------
 # -------------------------------------------------------------------------
-np.savetxt('output/electron'+str(rank)+'.txt',storedensity[:,0,:])
-myFunctions.plotImage('electron',storedensity[:,0,:])
+speciesList = np.array(['electron','Ar+','Ar2+','Ar*'])
+reactionList = np.array(['ionization',
+			 'excitation',
+			 'Dimer_formation',
+			 'R4', 
+			 'metastable_Ionization'])
+storedensity[storedensity<0] = seedElectrons
+for ck in np.arange(ns):
+	myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,speciesList[ck]+' density$(1/m^3)$',storedensity[:,ck,:] )
+	myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'production '+speciesList[ck]+ '${1/m3}$',storeReact[:,ck,:] )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'Potential $(V)$',storepotentl )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'net Charge $(C)$',storenetcharge )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'efield $(V/m)$',storeefield )
+myFunctions.plotImageAndSaveResult( dx * np.arange(ngrid) , storetime,'energy $(eV)$',storeenergy )
 
-np.savetxt('output/arpion'+str(rank)+'.txt',storedensity[:,1,:])
-myFunctions.plotImage('arpion',storedensity[:,1,:])
-
-np.savetxt('output/ar2pion'+str(rank)+'.txt',storedensity[:,2,:])
-myFunctions.plotImage('ar2pion',storedensity[:,2,:])
-
-np.savetxt('output/arstar'+str(rank)+'.txt',storedensity[:,3,:])
-myFunctions.plotImage('arstar',storedensity[:,3,:])
-
-np.savetxt('output/potential'+str(rank)+'.txt',storepotentl)
-myFunctions.plotImage('potential',storepotentl)
-
-np.savetxt('output/current'+str(rank)+'.txt',storeCurrent)
-
-np.savetxt('output/netcharge'+str(rank)+'.txt',storenetcharge)
-myFunctions.plotImage('netcharge',storenetcharge)
-
-np.savetxt('output/efield'+str(rank)+'.txt',storeefield)
-myFunctions.plotImage('efield',storeefield)
-
-np.savetxt('output/produc0'+str(rank)+'.txt',storeReact[:,0,:])
-myFunctions.plotImage('produc0',storeReact[:,0,:])
-
-np.savetxt('output/produc1'+str(rank)+'.txt',storeReact[:,1,:])
-myFunctions.plotImage('produc1',storeReact[:,1,:])
-
-np.savetxt('output/produc2'+str(rank)+'.txt',storeReact[:,2,:])
-myFunctions.plotImage('produc2',storeReact[:,2,:])
-
-np.savetxt('output/produc3'+str(rank)+'.txt',storeReact[:,3,:])
-myFunctions.plotImage('produc3',storeReact[:,3,:])
-
-np.savetxt('output/R0'+str(rank)+'.txt',storeR[:,0,:])
-myFunctions.plotImage('R0',storeR[:,0,:])
-
-np.savetxt('output/R1'+str(rank)+'.txt',storeR[:,1,:])
-myFunctions.plotImage('R1',storeR[:,1,:])
-
-np.savetxt('output/R2'+str(rank)+'.txt',storeR[:,2,:])
-myFunctions.plotImage('R2',storeR[:,2,:])
-
-np.savetxt('output/R3'+str(rank)+'.txt',storeR[:,3,:])
-myFunctions.plotImage('R3',storeR[:,3,:])
-
-np.savetxt('output/R4'+str(rank)+'.txt',storeR[:,4,:])
-myFunctions.plotImage('R4',storeR[:,4,:])
-
-np.savetxt('output/energy'+str(rank)+'.txt',storeenergy)
-myFunctions.plotImage('energy',storeenergy)
+for ck in np.arange(nr):
+	myFunctions.plotImageAndSaveResult( dx* np.arange(ngrid) , storetime,reactionList[ck] + 'Rate $(1/m^3)$',storeR[:,ck,:] )
+np.savetxt( 'output/current.txt',storeCurrent )
+np.savetxt( 'output/parameters.txt',np.array([newloc,ngrid0,ngrid,elapsed]) )

@@ -1,7 +1,7 @@
-# ____________________________________________________________________________________
-#______________	 PYTHON CODE ON 1D ARGON PLASMA   (7-11-2017)  _______________________
-#______________				 SAURAV GAUTAM		 _____________________________________
-#_____________________________________________________________________________________
+# ___________________________________________________________________________________________
+#______________	 PYTHON CODE ON 1D ARGON PLASMA   (04-09-2023)  _____________________________
+# to cite the code please cite :: https://iopscience.iop.org/article/10.1088/2058-6272/ac241f
+#_____________________________________________________________________________________________
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -167,7 +167,7 @@ try:
 		netcharge = ee * np.dot(ncharge,ndensity)					# calculating net charge
 		leftPot = 1.0 * volt * np.sin( 2 * np.pi * time * frequencySource)	   					# applied voltage (left)
 		rightpot = 0.0														# ground
-		chrgg =- (netcharge / e0) * dx * dx								 		# RHS matrix. <Read documentation>
+		chrgg =- (netcharge / e0) * dx * dx							 		# RHS matrix. <Read documentation>
 		chrgg[0] = leftPot													# left boundary condition
 		chrgg[-1] = rightpot										  		# right boundary condition
 		potentl = la.spsolve(poissonSparseMatrix, chrgg)			   			# solving system of Matrix equations
@@ -199,8 +199,8 @@ try:
 
 		ndensity[0,1] = (ndensity[0,1] * dx + dt * (-ndensity[0,1] * vthermal[1])) / dx
 		ndensity[0,-2] = (ndensity[0,-2] * dx + dt * (-ndensity[0,-2] * vthermal[1])) / dx
-		edensity[1] = (edensity[1] * dx + dt * (-(5/3) * edensity[1] * vthermal[-2])) / dx
-		edensity[-2] = (edensity[-2] * dx + dt * (-(5/3) * edensity[-2] * vthermal[-2])) / dx
+		edensity[1] = (edensity[1] * dx + dt * (-(5 / 3) * edensity[1] * vthermal[-2])) / dx
+		edensity[-2] = (edensity[-2] * dx + dt * (-(5 / 3) * edensity[-2] * vthermal[-2])) / dx
 		
 		# seed electron contribution (floor value) -------
 		temmatrix = seedElectrons + 0 * ndensity[0].copy()
@@ -210,8 +210,8 @@ try:
 
 		#===============================================================================================
 		#							*** CURRENT CALCULATION ***
-		current = (ee * np.sum((efield[2:-2] * mobilityG[1,2:-2] * ndensity[1,2:-2]
-				+  1 * efield[2:-2] * mobilityG[2,2:-2] * ndensity[2,2:-2] +
+		current = (ee * np.sum((efield[2:-2] * mobilityG[1,2:-2] * ndensity[1, 2:-2]
+				+  1 * efield[2:-2] * mobilityG[2,2:-2] * ndensity[2, 2:-2] +
 				efield[2:-2] * mobilityG[0,2:-2] * ndensity[0,2:-2] - 
 				1 * diffusionG[2,2:-2] * (ndensity[2,3:-1] -ndensity[2, 1:-3]) / (2 * dx)
 				- 1 * diffusionG[1,2:-2] * (ndensity[1,3:-1] - ndensity[1, 1:-3]) / (2 * dx)
