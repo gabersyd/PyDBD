@@ -106,7 +106,6 @@ poissonSparseMatrix = myFunctions.SparseLaplacianOperator(ngrid)   #poisson equa
 
 #==================================================================================================
 #									 *** TIME LOOP ***
-#--------------------------------------------------------------------------------------------------
 starttime = tm.time()
 time = 0
 
@@ -114,8 +113,9 @@ trT1 = 0.0
 trT2 = 0.0
 trT3 = 0.0
 lpT = 0.0 
+
 try:
-	while time < totaltime:# and elapsed<0.1 :
+	while time < totaltime: # and elapsed<0.1 :
 		inst1 = tm.time()
 		time = time + dt
 		newloc = int(time / stepinterval)
@@ -131,8 +131,6 @@ try:
 		else:
 			save1 = 0
 		#-----------------------------------------------------------------------------------------------
-
-		#===============================================================================================
 		#							   *** Energy Source ***
 		juoleheating = (efield[1:-1] * mobilityG[0, 1:-1] * ndensity[0, 1:-1] - diffusionG[0, 1:-1] * ((ndensity[0, 2:] - ndensity[0, :-2]) / (2 * dx)))  # Juole heating term (energy source)
 		energySource =- ee * juoleheating * efield[1:-1]-1 * (15.80 * ev * R[0, 1:-1] + 11.50 * ev * R[1, 1:-1] - 15.80 * ev * R[3, 1:-1] + 4.43 * ev * R[4, 1:-1]) / dt
@@ -141,24 +139,21 @@ try:
 
 		#========================================================================================================
 		#							   *** PARTICLE SOURCE TERM ***
-		#--------------------------------------------------------------------------------------------------------
 		backgroundradiation = 0 * 1e4												# Small number; for ionization due to cosmic radiation
 		R[0] = sourceG[0] * (ndensity[0] + backgroundradiation) * gasdens * dt			# source for reaction Ar + e- = Ar+ + 2e-
 		R[1] = 1 * (ndensity[0] + backgroundradiation) * gasdens * sourceG[1] * dt		# source for reaction Ar + e- = Ar* + 2e-
 		R[2] = 2.5e-43 * gasdens * gasdens * ndensity[1] * dt							# source for reaction Ar + Ar +Ar+ = Ar_2^+ + 2e-
 		R[3] = 3e-14 * (ndensity[0] + backgroundradiation) * ndensity[2] * dt			# source for reaction Ar + e- = Ar+ + 2e-
 		R[4] = 1 * sourceG[4] * (ndensity[0] + backgroundradiation) * ndensity[3] * dt	# source for reaction Ar* + e- = Ar + e-
-		#-----------------------------------------------------------------------------------------------=========
+		#--------------------------------------------------------------------------------------------------------
 		react[0] = (R[0] + R[4] - R[3])				# production of particle [0]
 		react[1] = (R[0] + R[4] - R[2])				# production of particle [1]
 		react[2] = (R[2] - R[3])					# production of particle [2]
 		react[3] = ( -R[4] + R[1])					# production of particle [3]
 		ndensity[:,1:-1] += 1 * react[:, 1:-1]		# adding newly produced particles to the gas
-		#----------------------------------------------------------------------------------------------
 
 		#======================================================================================================
 		#								   *** Particle and Energy Transport ***
-		#------------------------------------------------------------------------------------------------------
 		for loopDD in np.arange(ns):
 			mobilityG[loopDD] = ncharge[loopDD] * np.interp( np.abs(efieldTd), np.arange(990),  mobilityInput[loopDD, :990] ) / gasdens	
 			diffusionG[loopDD] = np.interp( np.abs(efieldTd), np.arange(990),  diffusionInput[loopDD, :990] ) / gasdens	
@@ -169,7 +164,6 @@ try:
 		inst2 = tm.time()
 		#==================================================================================================
 		#						   *** POISSON'S EQUATION ***
-		#--------------------------------------------------------------------------------------------------
 		netcharge = ee * np.dot(ncharge,ndensity)					# calculating net charge
 		leftPot = 1.0 * volt * np.sin( 2 * np.pi * time * frequencySource)	   					# applied voltage (left)
 		rightpot = 0.0														# ground
@@ -177,8 +171,8 @@ try:
 		chrgg[0] = leftPot													# left boundary condition
 		chrgg[-1] = rightpot										  		# right boundary condition
 		potentl = la.spsolve(poissonSparseMatrix, chrgg)			   			# solving system of Matrix equations
-		#--------------------------------------------------------------------------------------------------
-		#**calculate electric field as negative gradient of potential (Expressed in Townsend Unit)
+
+		#electric field 
 		efield[1:-1] =   - (potentl[2:] - potentl[:-2]) / (2.0 * dx)
 		efield[0] =   - (potentl[1] - potentl[0]) / dx
 		efield[-1] =   - (potentl[-1] - potentl[-2]) / dx
@@ -189,7 +183,6 @@ try:
 		#==================================================================================================
 		#					  *** TRANSPORT AND REACTION COEFFICIENTS ***
 		#--------------------------------------------------------------------------------------------------
-		#------------------------------------------------------------------------------------------------
 		energyparticle = edensity / (ndensity[0] + 1e-4) / ev
 		energyparticle = np.clip(energyparticle, 0, 16.99)
 		sourceG[0] = np.interp(energyparticle, np.arange(200) / 10,  energyionS) 	# reaction rate
@@ -200,8 +193,6 @@ try:
 
 		#========================================================================================================
 		#				   *** BOUNDARY CONDITION (THERMAL VELICITY) ***
-		#========================================================================================================
-		#-------------------------------------------------------------------------------------------------------------
 		eTemp = (2/3) * edensity / (ndensity[0] + 1e-4) / Kboltz
 		eTemp = np.clip(eTemp, mineTemp, maxeTemp)
 		vthermal = (1/2) * (8 * Kboltz * eTemp/(3.14*9.11e-31)) ** (1/2)
@@ -210,29 +201,22 @@ try:
 		ndensity[0,-2] = (ndensity[0,-2] * dx + dt * (-ndensity[0,-2] * vthermal[1])) / dx
 		edensity[1] = (edensity[1] * dx + dt * (-(5/3) * edensity[1] * vthermal[-2])) / dx
 		edensity[-2] = (edensity[-2] * dx + dt * (-(5/3) * edensity[-2] * vthermal[-2])) / dx
-		#--------------------------------------------------------------------------------------------------------------
-
 		
-		# seed electron contribution -------
+		# seed electron contribution (floor value) -------
 		temmatrix = seedElectrons + 0 * ndensity[0].copy()
 		temmatrix[ndensity[0] > seedElectrons] = 0.0	 
 		ndensity[0,1:-1] += temmatrix[1:-1]
 		ndensity[1,1:-1] += temmatrix[1:-1]	
-		#----------------------------------------------------------------------------------------------
 
 		#===============================================================================================
 		#							*** CURRENT CALCULATION ***
-		#------------------------------------------------------------------------------------------------
 		current = (ee * np.sum((efield[2:-2] * mobilityG[1,2:-2] * ndensity[1,2:-2]
-																  +  1 * efield[2:-2] * mobilityG[2,2:-2] * ndensity[2,2:-2]+   
-															  efield[2:-2] * mobilityG[0,2:-2] * ndensity[0,2:-2]-  
-																  1*diffusionG[2,2:-2] * (ndensity[2,3:-1]  -ndensity[2,1:-3])/(2 * dx)
-																  -1*diffusionG[1,2:-2] * (ndensity[1,3:-1]-ndensity[1,1:-3])/(2 * dx)
-																  +1*diffusionG[0,2:-2] * (ndensity[0,3:-1]-ndensity[0,1:-3])/(2 * dx)) * dx)
-			+1 * e0 * np.sum(efieldPP[5:-5] - efield[5:-5]) * dx)
-		#------------------------------------------------------------------------------------------------
-
-
+				+  1 * efield[2:-2] * mobilityG[2,2:-2] * ndensity[2,2:-2] +
+				efield[2:-2] * mobilityG[0,2:-2] * ndensity[0,2:-2] - 
+				1 * diffusionG[2,2:-2] * (ndensity[2,3:-1] -ndensity[2, 1:-3]) / (2 * dx)
+				- 1 * diffusionG[1,2:-2] * (ndensity[1,3:-1] - ndensity[1, 1:-3]) / (2 * dx)
+				+ 1 * diffusionG[0,2:-2] * (ndensity[0,3:-1] - ndensity[0, 1:-3]) / (2 * dx)) * dx)
+				+1 * e0 * np.sum(efieldPP[5:-5] - efield[5:-5]) * dx)
 
 		#======================================STORING RESULTS==========================================
 		if (save == 1):
@@ -248,11 +232,7 @@ try:
 			storeCurrent[newloc1] = current
 		#-----------------------------------------------------------------------------------------------
 		currenttime = tm.time()
-		inst5 = tm.time()
-		trT1 += (inst2 - inst1) 
-		trT2 += (inst4 - inst3) 
-		trT3 += (inst5 - inst4)
-		lpT +=  (inst3 - inst2) 
+		inst5 = tm.time(); trT1 += (inst2 - inst1); trT2 += (inst4 - inst3); trT3 += (inst5 - inst4); lpT +=  (inst3 - inst2) 
 		elapsed = (currenttime - starttime) / 3600
 except Exception as e: 
 	print(e)
@@ -261,6 +241,7 @@ except Exception as e:
 	np.savetxt('output/parameters' + str(rank) + '.txt', np.array([newloc, ngrid0, ngrid, elapsed]))
 	np.savetxt('output/error.txt', str(e))
 
+print("total elasped", elapsed * 3600)
 print("Percentage time for transport and source term", trT1 / (trT1 + trT2 + trT3 + lpT) * 100)
 print("Percentage time for interpolation", trT2 / (trT1 + trT2 + trT3 + lpT) * 100)
 print("Percentage time for boundary condition and storing results", trT3 / (trT1 + trT2 + trT3 + lpT) * 100)
