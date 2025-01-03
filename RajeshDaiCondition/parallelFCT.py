@@ -371,9 +371,8 @@ try:
 			np.savetxt(f"output/efieldPP_{newloc}.dat", efieldPP, fmt="%.6e")
 		#-----------------------------------------------------------------------------------------------
 		if (save1 == 1):
-			print(time)
 			with open("output/current.dat", "a") as f:
-				f.write(f"{current:.6e}\n")
+				f.write(f"{time:.6e} {current:.6e}\n")
 		#-----------------------------------------------------------------------------------------------
 		currenttime = tm.time()
 		elapsed = (currenttime-starttime)/3600
